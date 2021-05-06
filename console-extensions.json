@@ -1,0 +1,37 @@
+/**
+ * This file declares all extensions contributed by the plugin.
+ *
+ * Depending on extension 'type', the 'properties' object may contain code references, encoded
+ * as object literals { $codeRef: string }. The '$codeRef' value should be formatted as either
+ * 'moduleName.exportName' (referring to a named export) or 'moduleName' (referring to the
+ * 'default' export). Only the plugin's exposed modules may be used in code references.
+ */
+[
+  {
+    "type": "console.page/route",
+    "properties": {
+      "path": ["/k8s/ns/:ns/cim", "/k8s/all-namespaces/cim"],
+      "component": {
+        "$codeRef": "InfraListPage.default"
+      }
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "cim-infra",
+      "name": "Infrastructures",
+      "href": "/k8s/all-namespaces/cim",
+      "section": "administration"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "cim-host-type",
+      "name": "Host types",
+      "href": "/cim/hostType",
+      "section": "administration"
+    }
+  }
+]
