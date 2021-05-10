@@ -1,6 +1,7 @@
 /* eslint-env node */
 
 import * as webpack from 'webpack';
+import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
 import * as path from 'path';
 import * as MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { ConsoleRemotePlugin } from '@openshift-console/dynamic-plugin-sdk/webpack';
@@ -8,13 +9,22 @@ import { ConsoleRemotePlugin } from '@openshift-console/dynamic-plugin-sdk/webpa
 const extractCSS = new MiniCssExtractPlugin();
 const overpassTest = /overpass-.*\.(woff2?|ttf|eot|otf)(\?.*$|$)/;
 
-const config: webpack.Configuration = {
+interface Configuration extends webpack.Configuration {
+  devServer?: WebpackDevServerConfiguration;
+}
+
+const config: Configuration = {
   mode: 'development',
   context: path.resolve(__dirname, 'src'),
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name]-bundle.js',
     chunkFilename: '[name]-chunk.js',
+  },
+  devServer: {
+    contentBase: path.join(__dirname, 'dist'),
+    compress: true,
+    port: 9001,
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],

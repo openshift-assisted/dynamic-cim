@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { useK8sWatchResource, ListPageHeader, ListPageBody, VirtualizedTable, TableColumn, RowProps, TableRow, TableData } from '@openshift-console/dynamic-plugin-sdk/api';
+import { Link } from 'react-router-dom';
 
 const columns: TableColumn<K8sResourceCommon>[] = [
   {
@@ -12,7 +13,7 @@ const columns: TableColumn<K8sResourceCommon>[] = [
 
 const InfraRow: React.FC<RowProps<K8sResourceCommon>> = ({ obj, index, style }) => (
   <TableRow id={obj.metadata.uid} index={index} trKey={obj.metadata.uid} style={style}>
-    <TableData>{obj.metadata.name}</TableData>
+    <TableData><Link to="/k8s/cim/foo">{obj.metadata.name}</Link></TableData>
   </TableRow>
 )
 

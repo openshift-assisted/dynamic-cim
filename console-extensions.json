@@ -17,6 +17,15 @@
     }
   },
   {
+    "type": "console.page/route",
+    "properties": {
+      "path": ["/k8s/cim/foo"],
+      "component": {
+        "$codeRef": "InfraEnvDetails.default"
+      }
+    }
+  },
+  {
     "type": "console.navigation/href",
     "properties": {
       "id": "cim-infra",
