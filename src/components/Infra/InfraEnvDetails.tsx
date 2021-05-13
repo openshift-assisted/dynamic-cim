@@ -1,17 +1,31 @@
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
-import { InfraEnvDetails as InfraEnvDetailsAssisted } from 'openshift-assisted-ui-lib';
+// import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { match as RMatch } from 'react-router-dom';
+import { DetailsPage } from '@openshift-console/dynamic-plugin-sdk/api';
+// import { InfraEnvDetails as InfraEnvDetailsAssisted } from 'openshift-assisted-ui-lib';
 import * as React from 'react';
+import AgentTable from '../Agent/AgentTable';
 
-const InfraEnvDetails: React.FC = () => {
-  const [infra] = useK8sWatchResource<K8sResourceCommon>({
-    kind: 'agent-install.openshift.io~v1beta1~InfraEnv',
-    name: 'example',
-    namespace: 'default',
-    namespaced: true,
-  });
+type InfraEnvDetailsProps = {
+  match: RMatch;
+}
 
-  return <InfraEnvDetailsAssisted name={infra?.metadata?.name} provider="Foo" location="foo" labels={{}} />
+const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = (props) => {
+  return (
+    <DetailsPage
+      {...props}
+      kind="agent-install.openshift.io~v1beta1~InfraEnv"
+      name="cluster-crd-tj4"
+      namespace="assisted-installer"
+      menuActions={[]}
+      pages={[
+        {
+          href: '',
+          nameKey: 'Hosts',
+          component: AgentTable,
+        },
+      ]}
+    />
+  );
 }
 
 export default InfraEnvDetails;
