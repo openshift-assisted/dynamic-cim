@@ -1,7 +1,7 @@
 # dynamic-cim
 
 1. clone `cim` branch of OpenShift Console https://github.com/rawagner/console/tree/cim
-2. build `console-ynamic-plugin-sdk` https://github.com/rawagner/console/tree/cim/frontend/packages/console-dynamic-plugin-sdk by running `yarn build`
+2. build `console-dynamic-plugin-sdk` https://github.com/rawagner/console/tree/cim/frontend/packages/console-dynamic-plugin-sdk by running `yarn build`
 3. link the build with `dynamic-cim` node_modules
 4. clone & build `assisted-ui-lib` https://github.com/openshift-assisted/assisted-ui-lib#develop - set `ASSISTED_UI_ROOT` to `../dynamic-cim`
 5. start development server for `dynamic-cim` `yarn dev`
