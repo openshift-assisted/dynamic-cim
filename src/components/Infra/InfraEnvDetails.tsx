@@ -1,8 +1,7 @@
-// import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
 import { DetailsPage } from '@openshift-console/dynamic-plugin-sdk/api';
-// import { InfraEnvDetails as InfraEnvDetailsAssisted } from 'openshift-assisted-ui-lib';
-import * as React from 'react';
+
 import AgentTable from '../Agent/AgentTable';
 
 type InfraEnvDetailsProps = {

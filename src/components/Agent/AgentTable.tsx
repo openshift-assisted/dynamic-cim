@@ -28,6 +28,7 @@ const AgentTable: React.FC = () => {
     namespaced: true,
   });
 
+  // mock agent, so we always have at least one
   hosts.push(agentcr);
 
   const restHosts = hosts.map((h: any) => {
