@@ -72,7 +72,8 @@
     "description": "Plasma reactors online. Initiating hyper drive.",
     "exposedModules": {
       "InfraListPage": "./components/Infra/InfraListPage.tsx",
-      "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx"
+      "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx",
+      "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx"
     },
     "dependencies": {
       "@console/pluginAPI": "*"
