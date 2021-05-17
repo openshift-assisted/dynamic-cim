@@ -19,6 +19,15 @@
   {
     "type": "console.page/route",
     "properties": {
+      "path": ["/k8s/ns/:ns/clusters", "/k8s/all-namespaces/clusters"],
+      "component": {
+        "$codeRef": "ClusterDeploymentsListPage.default"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
       "path": ["/k8s/cim/foo"],
       "component": {
         "$codeRef": "InfraEnvDetails.default"
@@ -31,6 +40,15 @@
       "id": "cim-infra",
       "name": "Infrastructures",
       "href": "/k8s/all-namespaces/cim",
+      "section": "administration"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "cim-clusters",
+      "name": "Clusters",
+      "href": "/k8s/all-namespaces/clusters",
       "section": "administration"
     }
   },
