@@ -94,7 +94,7 @@ const config: Configuration = {
   },
   externals: {
     '@openshift-console/dynamic-plugin-sdk/api': 'api',
-  }
+  },
 };
 
 if (process.env.NODE_ENV === 'production') {
