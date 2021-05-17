@@ -86,7 +86,14 @@ const config: Configuration = {
       },
     ],
   },
-  plugins: [extractCSS, new ConsoleRemotePlugin()],
+  plugins: [
+    extractCSS,
+    new ConsoleRemotePlugin(),
+    new webpack.EnvironmentPlugin({
+      REACT_APP_API_ROOT: '',
+      REACT_APP_BUILD_MODE: '',
+    }),
+  ],
   devtool: 'source-map',
   optimization: {
     chunkIds: 'named',
