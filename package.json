@@ -74,7 +74,8 @@
     "exposedModules": {
       "InfraListPage": "./components/Infra/InfraListPage.tsx",
       "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx",
-      "InfraEnvWizard": "./components/Infra/InfraEnvWizard.tsx"
+      "InfraEnvWizard": "./components/Infra/InfraEnvWizard.tsx",
+      "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx"
     },
     "dependencies": {
       "@console/pluginAPI": "*"

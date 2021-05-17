@@ -29,7 +29,7 @@ type InfraEnvDetailsProps = {
   match: RMatch;
   namespace: string;
   name: string;
-}
+};
 
 const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ namespace, name, ...rest }) => {
   const { downloadIsoDialog } = useModalDialogsContext();
