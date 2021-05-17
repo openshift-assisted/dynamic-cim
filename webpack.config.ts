@@ -45,7 +45,7 @@ const config: Configuration = {
       },
       {
         test: /\.s?css$/,
-        exclude: /node_modules\/(?!(@patternfly)\/).*/,
+        exclude: /node_modules\/(?!(@patternfly)|(openshift-assisted-ui-lib)\/).*/,
         use: [
           {
             loader: MiniCssExtractPlugin.loader,
@@ -77,6 +77,11 @@ const config: Configuration = {
         ],
       },
       {
+        test: /\.css$/,
+        include: /node_modules\/monaco-editor/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
         test: /\.(png|jpg|jpeg|gif|svg|woff2?|ttf|eot|otf)(\?.*$|$)/,
         exclude: overpassTest,
         loader: 'file-loader',
@@ -93,6 +98,9 @@ const config: Configuration = {
       REACT_APP_API_ROOT: '',
       REACT_APP_BUILD_MODE: '',
     }),
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+    })
   ],
   devtool: 'source-map',
   optimization: {
