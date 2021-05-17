@@ -8,39 +8,52 @@
  */
 [
   {
-    "type": "console.page/route",
+    "type": "console.page/resource/list",
     "properties": {
-      "path": ["/k8s/ns/:ns/cim", "/k8s/all-namespaces/cim"],
+      "model": {
+        "group": "agent-install.openshift.io",
+        "version": "v1beta1",
+        "kind": "InfraEnv"
+      },
       "component": {
         "$codeRef": "InfraListPage.default"
       }
     }
   },
   {
-    "type": "console.page/route",
+    "type": "console.page/resource/details",
     "properties": {
-      "path": ["/k8s/cim/foo"],
+      "model": {
+        "group": "agent-install.openshift.io",
+        "version": "v1beta1",
+        "kind": "InfraEnv"
+      },
       "component": {
         "$codeRef": "InfraEnvDetails.default"
       }
     }
   },
   {
-    "type": "console.navigation/href",
+    "type": "console.page/route",
     "properties": {
-      "id": "cim-infra",
-      "name": "Infrastructures",
-      "href": "/k8s/all-namespaces/cim",
-      "section": "administration"
+      "exact": true,
+      "path": ["/k8s/ns/:ns/agent-install.openshift.io~v1beta1~InfraEnv/~new"],
+      "component": {
+        "$codeRef": "InfraEnvWizard.default"
+      }
     }
   },
   {
-    "type": "console.navigation/href",
+    "type": "console.navigation/resource-ns",
     "properties": {
-      "id": "cim-host-type",
-      "name": "Host types",
-      "href": "/cim/hostType",
-      "section": "administration"
+      "id": "infra-env",
+      "section": "administration",
+      "name": "Infrastructures",
+      "model": {
+        "group": "agent-install.openshift.io",
+        "version": "v1beta1",
+        "kind": "InfraEnv"
+      }
     }
   }
 ]

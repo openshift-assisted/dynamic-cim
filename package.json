@@ -41,7 +41,8 @@
     "reselect": "^4.0.0",
     "uuid": "^8.1.0",
     "webpack-dev-server": "^3.11.2",
-    "yup": "^0.28.3"
+    "yup": "^0.28.3",
+    "js-base64": "^2.5.1"
   },
   "devDependencies": {
     "@openshift-console/dynamic-plugin-sdk": "0.0.0-alpha12",
@@ -72,7 +73,8 @@
     "description": "Plasma reactors online. Initiating hyper drive.",
     "exposedModules": {
       "InfraListPage": "./components/Infra/InfraListPage.tsx",
-      "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx"
+      "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx",
+      "InfraEnvWizard": "./components/Infra/InfraEnvWizard.tsx"
     },
     "dependencies": {
       "@console/pluginAPI": "*"

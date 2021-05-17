@@ -20,12 +20,15 @@ const getColumns = () => [
   { title: ''},
 ];
 
+type AgentTableProps = {
+  obj: any;
+}
 
-const AgentTable: React.FC = () => {
+const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const [hosts] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: `agent-install.openshift.io~v1beta1~Agent`,
     isList: true,
-    namespaced: true,
+    selector: obj.spec.agentLabelSelector,
   });
 
   // mock agent, so we always have at least one
