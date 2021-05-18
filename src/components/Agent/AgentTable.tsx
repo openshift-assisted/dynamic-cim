@@ -1,10 +1,9 @@
+import * as React from 'react';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
-import { HostsTable } from 'openshift-assisted-ui-lib';
-import { Host } from 'openshift-assisted-ui-lib/dist/src/api';
-import * as React from 'react';
+import { HostsTable, Api } from 'openshift-assisted-ui-lib';
 import { agentcr } from './agentcr';
-import { Stack, StackItem } from '@patternfly/react-core'
+import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
 
 import './agenttable.scss';
@@ -17,7 +16,7 @@ const getColumns = () => [
   { title: 'CPU Cores', transforms: [sortable] }, // cores per machine (sockets x cores)
   { title: 'Memory', transforms: [sortable] },
   { title: 'Disk', transforms: [sortable] },
-  { title: ''},
+  { title: '' },
 ];
 
 type AgentTableProps = {
@@ -35,7 +34,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   hosts.push(agentcr);
 
   const restHosts = hosts.map((h: any) => {
-    let restHost: Host;
+    let restHost: Api.Host;
     restHost = {
       id: h.metadata.uid,
       href: '',
