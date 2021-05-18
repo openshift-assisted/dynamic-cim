@@ -31,12 +31,11 @@ const dialogIds: DialogId[] = ['downloadIsoDialog'];
 
 const ModalDialogsContext = React.createContext<ModalDialogsContextType | undefined>(undefined);
 
-// TODO(mlibra): reuse ModalDialogsContextProvider from the assisted-ui-lib
+// Simplify common modal-related - isOpen, onClose and passing params
 const ModalDialogsContextProvider: React.FC = ({ children }) => {
   const [dialogsState, dispatchDialogsAction] = React.useReducer(dialogsReducer, {});
 
   function getOpenDialog<DataType>(dialogId: string) {
-    console.log('--- getOpenDialog: ', dialogId);
     return (data: DataType) => dispatchDialogsAction(openDialogAction({ dialogId, data }));
   }
 
