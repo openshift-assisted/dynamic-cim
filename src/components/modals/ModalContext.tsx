@@ -7,15 +7,18 @@ const {
   closeDialog: closeDialogAction,
 } = Reducers.Dialogs;
 
-type DialogId = 'downloadIsoDialog'; // TODO: list additional dialogs here
+type DialogId = 'downloadIsoDialog' | 'addBmcDialog';
 
 type DownloadIsoDialogProps = {
   fileName: string;
   downloadUrl: string;
 };
 
+type AddBmcDialogProps = {};
+
 type ModalDialogsDataTypes = {
   downloadIsoDialog: DownloadIsoDialogProps;
+  addBmcDialog: AddBmcDialogProps;
 };
 
 export type ModalDialogsContextType = {
@@ -27,7 +30,7 @@ export type ModalDialogsContextType = {
   };
 };
 
-const dialogIds: DialogId[] = ['downloadIsoDialog'];
+const dialogIds: DialogId[] = ['downloadIsoDialog', 'addBmcDialog'];
 
 const ModalDialogsContext = React.createContext<ModalDialogsContextType | undefined>(undefined);
 
