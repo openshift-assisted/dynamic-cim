@@ -75,7 +75,8 @@
       "InfraListPage": "./components/Infra/InfraListPage.tsx",
       "InfraEnvDetails": "./components/Infra/InfraEnvDetails.tsx",
       "InfraEnvWizard": "./components/Infra/InfraEnvWizard.tsx",
-      "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx"
+      "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx",
+      "ClusterDeploymentDetails": "./components/cluster-deployments/ClusterDeploymentDetails.tsx"
     },
     "dependencies": {
       "@console/pluginAPI": "*"

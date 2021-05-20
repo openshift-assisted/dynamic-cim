@@ -37,6 +37,7 @@
     "type": "console.page/route",
     "properties": {
       "path": ["/k8s/ns/:ns/clusters", "/k8s/all-namespaces/clusters"],
+      "exact": true,
       "component": {
         "$codeRef": "ClusterDeploymentsListPage.default"
       }
@@ -72,6 +73,15 @@
       "name": "Clusters",
       "href": "/k8s/all-namespaces/clusters",
       "section": "administration"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "path": ["/k8s/ns/:ns/clusters/:name", "/k8s/all-namespaces/clusters/:name"],
+      "component": {
+        "$codeRef": "ClusterDeploymentDetails.default"
+      }
     }
   }
 ]
