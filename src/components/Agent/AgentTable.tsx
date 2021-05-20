@@ -29,6 +29,8 @@ const AgentTable: React.FC = () => {
   // mock agent, so we always have at least one
   hosts.push(agentcr);
 
+  // TODO(mlibra): query BareMetalHosts and merge with agents
+
   const restHosts = hosts.map((h: any) => {
     let restHost: Api.Host;
     restHost = {

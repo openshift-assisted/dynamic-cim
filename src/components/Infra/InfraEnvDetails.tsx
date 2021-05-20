@@ -7,8 +7,9 @@ import {} from 'openshift-assisted-ui-lib';
 import {
   ModalDialogsContextProvider,
   useModalDialogsContext,
-  DownloadIsoModal,
   ModalDialogsContextType,
+  DownloadIsoModal,
+  AddBmcModal,
 } from '../modals';
 
 import '../styles.scss';
@@ -29,18 +30,32 @@ const addHostAction =
     };
   };
 
+const addBmcAction =
+  (open: ModalDialogsContextType['addBmcDialog']['open']): KebabAction =>
+  (kind: K8sKind, obj: InfraEnv, resources: {}) => {
+    return {
+      label: 'Add BMC',
+      hidden: false,
+      callback: () => open({}),
+    };
+  };
+
 const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = (props) => {
-  const { downloadIsoDialog } = useModalDialogsContext();
+  const { downloadIsoDialog, addBmcDialog } = useModalDialogsContext();
 
-  const menuActions = [addHostAction(downloadIsoDialog.open)];
+  const menuActions = [addHostAction(downloadIsoDialog.open), addBmcAction(addBmcDialog.open)];
 
+  const namespace = 'assisted-installer'; // TODO(mlibra), needs rebase
+
+  // name="jtomasek-test-cluster-infraenv"
+  // name="cluster-crd-tj4"
   return (
     <>
       <DetailsPage
         {...props}
         kind="agent-install.openshift.io~v1beta1~InfraEnv"
-        name="cluster-crd-tj4"
-        namespace="assisted-installer"
+        name="jtomasek-test-cluster-infraenv"
+        namespace={namespace}
         menuActions={menuActions}
         pages={[
           {
@@ -51,6 +66,7 @@ const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = (props) => {
         ]}
       />
       <DownloadIsoModal />
+      <AddBmcModal namespace={namespace} />
     </>
   );
 };
