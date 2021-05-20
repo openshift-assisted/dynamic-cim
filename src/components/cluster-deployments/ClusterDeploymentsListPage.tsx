@@ -34,7 +34,7 @@ const columns: TableColumn<K8sResourceCommon>[] = [
 const ClusterDeploymentRow: React.FC<RowProps<K8sResourceCommon>> = ({ obj, index, style }) => (
   <TableRow id={obj.metadata.uid} index={index} trKey={obj.metadata.uid} style={style}>
     <TableData>
-      <Link to="/k8s/cim/foo">{obj.metadata.name}</Link>
+      <Link to={`/k8s/all-namespaces/clusters/${obj.metadata.name}`}>{obj.metadata.name}</Link>
     </TableData>
     <TableData>?</TableData>
     <TableData>?</TableData>
@@ -56,9 +56,12 @@ const ClusterDeploymentsListPage: React.FC = () => {
     namespaced: true,
   });
 
+  console.log('clusterDeployments', clusterDeployments);
+  console.log('agentClusterInstalls', agentClusterInstalls);
+
   return (
     <>
-      <ListPageHeader title="Clusters"></ListPageHeader>
+      <ListPageHeader title="Clusters" />
       <ListPageBody>
         <VirtualizedTable
           loaded={cdLoaded && aciLoaded}
