@@ -59,7 +59,7 @@ export type BareMetalHostKind = {
       url: string;
     };
     online: boolean;
-    automatedCleaningMode: 'disabled';
+    automatedCleaningMode: string;
     externallyProvisioned?: boolean;
     description?: string;
   };
