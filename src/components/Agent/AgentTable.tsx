@@ -5,7 +5,6 @@ import { HostsTable, Api } from 'openshift-assisted-ui-lib';
 import { agentcr } from './agentcr';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
-import { BareMetalHostModel } from '../../models';
 
 import './agenttable.scss';
 
@@ -22,12 +21,13 @@ const getColumns = () => [
 
 const AgentTable: React.FC = () => {
   const [hosts] = useK8sWatchResource<K8sResourceCommon[]>({
-    kind: `agent-install.openshift.io~v1beta1~Agent`, // TODO(mlibra): compose from a model
+    kind: 'agent-install.openshift.io~v1beta1~Agent',
     isList: true,
     namespaced: true,
   });
+  
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
-    kind: `${BareMetalHostModel.apiGroup}~${BareMetalHostModel.apiVersion}~${BareMetalHostModel.kind}`,
+    kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
     namespaced: true,
   });
