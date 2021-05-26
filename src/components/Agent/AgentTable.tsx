@@ -25,7 +25,7 @@ const AgentTable: React.FC = () => {
     isList: true,
     namespaced: true,
   });
-  
+
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
