@@ -2156,7 +2156,7 @@ form-data@~2.3.2:
     combined-stream "^1.0.6"
     mime-types "^2.1.12"
 
-formik@^2.1.4:
+formik@2.2.6, formik@^2.1.4:
   version "2.2.6"
   resolved "https://registry.yarnpkg.com/formik/-/formik-2.2.6.tgz#378a4bafe4b95caf6acf6db01f81f3fe5147559d"
   integrity sha512-Kxk2zQRafy56zhLmrzcbryUpMBvT0tal5IvcifK5+4YNGelKsnrODFJ0sZQRMQboblWNym4lAW3bt+tf2vApSA==
@@ -3904,16 +3904,22 @@ opener@^1.5.1:
   resolved "https://registry.yarnpkg.com/opener/-/opener-1.5.1.tgz#6d2f0e77f1a0af0032aca716c2c1fbb8e7e8abed"
   integrity sha512-goYSy5c2UXE4Ra1xixabeVh1guIX/ZV/YokJksb6q2lubWu6UbvPQ20p542/sFIll1nl8JnCyK9oBaOcCWXwvA==
 
-openshift-assisted-ui-lib@^1.5.19:
-  version "1.5.19"
-  resolved "https://registry.yarnpkg.com/openshift-assisted-ui-lib/-/openshift-assisted-ui-lib-1.5.19.tgz#8191195250b833ded660226f6b3b985c5d68a2aa"
-  integrity sha512-yVKQz4oIUkg8V2/34ioA5zYqddyZggRr3FQhRD5bUi0+r+ypndMTDHZKvEqxOVmIjRbvQD2Wav2f6ENm628Ueg==
+openshift-assisted-ui-lib@^1.5.22:
+  version "1.5.22"
+  resolved "https://registry.yarnpkg.com/openshift-assisted-ui-lib/-/openshift-assisted-ui-lib-1.5.22.tgz#b09024dbf188342668198d30ae89f667374791e4"
+  integrity sha512-Lje2Lamm9BNch2HBx2TJVBq0rsx2aFBe2OX414qE9Bc23kknzv+XBNeQTFuVuMwMEmHzH/Y9S9scCxfhFvthZg==
   dependencies:
     axios-case-converter "^0.6.0"
+    file-saver "^2.0.2"
     filesize.js "^2.0.0"
+    formik "2.2.6"
+    http-proxy-middleware "^1.0.3"
+    human-date "^1.4.0"
+    humanize-plus "^1.8.2"
     ip-address "^7.1.0"
     is-cidr "^4.0.2"
     is-in-subnet "^3.1.0"
+    prism-react-renderer "^1.1.1"
     unique-names-generator "^4.2.0"
 
 opn@^5.5.0:
