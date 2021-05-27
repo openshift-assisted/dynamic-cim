@@ -12,6 +12,8 @@ import {
   TableData,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
+import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
+import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
 
 const columns: TableColumn<K8sResourceCommon>[] = [
   {
@@ -23,50 +25,64 @@ const columns: TableColumn<K8sResourceCommon>[] = [
   {
     title: 'Distribution version',
   },
-  {
-    title: 'Infrastructure provider',
-  },
-  {
-    title: 'Labels',
-  },
 ];
 
-const ClusterDeploymentRow: React.FC<RowProps<K8sResourceCommon>> = ({ obj, index, style }) => (
-  <TableRow id={obj.metadata.uid} index={index} trKey={obj.metadata.uid} style={style}>
-    <TableData>
-      <Link to={`/k8s/all-namespaces/clusters/${obj.metadata.name}`}>{obj.metadata.name}</Link>
-    </TableData>
-    <TableData>?</TableData>
-    <TableData>?</TableData>
-    <TableData>?</TableData>
-    <TableData>?</TableData>
-  </TableRow>
-);
+type ClusterDeploymentRowData = {
+  clusterDeployment: ClusterDeploymentK8sResource;
+  agentClusterInstall?: AgentClusterInstallK8sResource;
+};
+
+const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
+  obj,
+  index,
+  style,
+}) => {
+  console.log('obj', obj);
+  const { clusterDeployment, agentClusterInstall } = obj;
+  const {
+    metadata: { uid, name, namespace },
+  } = clusterDeployment;
+  return (
+    <TableRow id={uid} index={index} trKey={uid} style={style}>
+      <TableData>
+        <Link to={`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}`}>{name}</Link>
+      </TableData>
+      <TableData>-</TableData>
+      <TableData>{agentClusterInstall?.spec?.imageSetRef?.name}</TableData>
+    </TableRow>
+  );
+};
 
 const ClusterDeploymentsListPage: React.FC = () => {
-  const [clusterDeployments, cdLoaded, cdLoadError] = useK8sWatchResource<K8sResourceCommon[]>({
-    kind: 'hive.openshift.io~v1~ClusterDeployment',
+  const [clusterDeployments, loaded, error] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
+    kind: ClusterDeploymentKind,
     isList: true,
     namespaced: true,
   });
 
-  const [agentClusterInstalls, aciLoaded, aciLoadError] = useK8sWatchResource<K8sResourceCommon[]>({
-    kind: 'extensions.hive.openshift.io~v1beta1~AgentClusterInstall',
+  const [agentClusterInstalls, aciLoaded, aciError] = useK8sWatchResource<
+    AgentClusterInstallK8sResource[]
+  >({
+    kind: AgentClusterInstallKind,
     isList: true,
     namespaced: true,
   });
 
-  console.log('clusterDeployments', clusterDeployments);
-  console.log('agentClusterInstalls', agentClusterInstalls);
+  const data = clusterDeployments.map((cd) => ({
+    clusterDeployment: cd,
+    agentClusterInstall: agentClusterInstalls.find(
+      (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
+    ),
+  }));
 
   return (
     <>
       <ListPageHeader title="Clusters" />
       <ListPageBody>
         <VirtualizedTable
-          loaded={cdLoaded && aciLoaded}
-          loadError={cdLoadError || aciLoadError}
-          data={clusterDeployments}
+          loaded={loaded && aciLoaded}
+          loadError={error || aciError}
+          data={data}
           Row={ClusterDeploymentRow}
           columns={columns}
         />

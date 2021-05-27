@@ -35,27 +35,39 @@
     }
   },
   {
-    "type": "console.navigation/href",
+    "type": "console.navigation/resource-ns",
     "properties": {
-      "id": "cim-clusters",
+      "id": "cim-cluster-deployments",
       "name": "Clusters",
-      "href": "/k8s/all-namespaces/clusters",
-      "section": "administration"
+      "section": "administration",
+      "model": {
+        "group": "hive.openshift.io",
+        "version": "v1",
+        "kind": "ClusterDeployment"
+      }
     }
   },
   {
-    "type": "console.page/route",
+    "type": "console.page/resource/details",
     "properties": {
-      "path": ["/k8s/ns/:ns/clusters/:name", "/k8s/all-namespaces/clusters/:name"],
+      "model": {
+        "group": "hive.openshift.io",
+        "version": "v1",
+        "kind": "ClusterDeployment"
+      },
       "component": {
         "$codeRef": "ClusterDeploymentDetails.default"
       }
     }
   },
   {
-    "type": "console.page/route",
+    "type": "console.page/resource/list",
     "properties": {
-      "path": ["/k8s/ns/:ns/clusters", "/k8s/all-namespaces/clusters"],
+      "model": {
+        "group": "hive.openshift.io",
+        "version": "v1",
+        "kind": "ClusterDeployment"
+      },
       "component": {
         "$codeRef": "ClusterDeploymentsListPage.default"
       }
