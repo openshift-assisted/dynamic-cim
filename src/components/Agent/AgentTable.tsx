@@ -25,7 +25,7 @@ const getColumns = () => [
 
 type AgentTableProps = {
   obj: InfraEnv;
-}
+};
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();

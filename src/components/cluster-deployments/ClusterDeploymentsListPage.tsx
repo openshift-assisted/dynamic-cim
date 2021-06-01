@@ -10,6 +10,7 @@ import {
   RowProps,
   TableRow,
   TableData,
+  ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
@@ -37,7 +38,6 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   index,
   style,
 }) => {
-  console.log('obj', obj);
   const { clusterDeployment, agentClusterInstall } = obj;
   const {
     metadata: { uid, name, namespace },
@@ -77,7 +77,9 @@ const ClusterDeploymentsListPage: React.FC = () => {
 
   return (
     <>
-      <ListPageHeader title="Clusters" />
+      <ListPageHeader title="Clusters">
+        <ListPageCreate groupVersionKind={ClusterDeploymentKind}>Create Cluster</ListPageCreate>
+      </ListPageHeader>
       <ListPageBody>
         <VirtualizedTable
           loaded={loaded && aciLoaded}

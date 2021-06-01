@@ -20,7 +20,7 @@ type InfraEnvDetailsProps = {
   match: RMatch;
   namespace: string;
   name: string;
-}
+};
 
 const addHostAction =
   (open: ModalDialogsContextType['downloadIsoDialog']['open']): KebabAction =>
@@ -58,10 +58,10 @@ const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...r
         menuActions={menuActions}
         pages={[
           {
-          href: '',
-          nameKey: 'Details',
-          component: InfraDetailsTab,
-        },
+            href: '',
+            nameKey: 'Details',
+            component: InfraDetailsTab,
+          },
           {
             href: 'hosts',
             nameKey: 'Hosts',

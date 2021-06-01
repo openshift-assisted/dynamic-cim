@@ -65,7 +65,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
   if (agentClusterInstallError) throw new Error(agentClusterInstallError);
   if (!(agentsLoaded && agentClusterInstallLoaded)) return <LoadingState />;
 
-  const cluster = getAICluster(clusterDeployment, agentClusterInstall, agents);
+  const cluster = getAICluster({ clusterDeployment, agentClusterInstall, agents });
   return (
     <div className="co-m-pane__body">
       {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre>

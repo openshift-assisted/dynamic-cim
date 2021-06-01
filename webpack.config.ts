@@ -100,7 +100,7 @@ const config: Configuration = {
     }),
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-    })
+    }),
   ],
   devtool: 'source-map',
   optimization: {

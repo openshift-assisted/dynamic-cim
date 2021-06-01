@@ -83,7 +83,8 @@
       "InfraEnvDetails": "./components/Infra/InfraEnvDetailsPage.tsx",
       "InfraEnvForm": "./components/Infra/InfraEnvForm.tsx",
       "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx",
-      "ClusterDeploymentDetails": "./components/cluster-deployments/ClusterDeploymentDetails.tsx"
+      "ClusterDeploymentDetails": "./components/cluster-deployments/ClusterDeploymentDetails.tsx",
+      "CreateClusterWizard": "./components/cluster-deployments/CreateClusterWizard.tsx"
     },
     "dependencies": {
       "@console/pluginAPI": "*"

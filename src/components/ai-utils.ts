@@ -5,7 +5,7 @@ import {
 } from './types';
 import { Cluster as AICluster, Host as AIHost } from 'openshift-assisted-ui-lib/dist/src/api';
 
-export const getAIHosts = (agents: AgentK8sResource[]) =>
+export const getAIHosts = (agents: AgentK8sResource[] = []) =>
   agents.map(
     (agent): AIHost => ({
       kind: 'Host',
@@ -19,19 +19,25 @@ export const getAIHosts = (agents: AgentK8sResource[]) =>
     }),
   );
 
-export const getAICluster = (
-  clusterDeployment: ClusterDeploymentK8sResource,
-  agentClusterInstall: AgentClusterInstallK8sResource,
-  agents: AgentK8sResource[],
-): AICluster => ({
+export const getAICluster = ({
+  clusterDeployment,
+  agentClusterInstall,
+  agents,
+  status = 'installing',
+}: {
+  clusterDeployment: ClusterDeploymentK8sResource;
+  agentClusterInstall?: AgentClusterInstallK8sResource;
+  agents?: AgentK8sResource[];
+  status?: AICluster['status'];
+}): AICluster => ({
   id: clusterDeployment.metadata.uid,
   kind: 'Cluster',
   href: '',
   name: clusterDeployment.spec.clusterName,
   baseDnsDomain: clusterDeployment.spec.baseDomain,
-  apiVip: agentClusterInstall.spec.apiVip,
-  ingressVip: agentClusterInstall.spec.ingressVip,
-  status: 'installing',
+  apiVip: agentClusterInstall?.spec?.apiVip,
+  ingressVip: agentClusterInstall?.spec?.ingressVip,
+  status,
   statusInfo: '',
   imageInfo: {},
   monitoredOperators: [],

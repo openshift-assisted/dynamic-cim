@@ -83,6 +83,15 @@
     }
   },
   {
+    "type": "console.page/route",
+    "properties": {
+      "path": ["/k8s/:ns/hive.openshift.io~v1~ClusterDeployment/~new"],
+      "component": {
+        "$codeRef": "CreateClusterWizard.default"
+      }
+    }
+  },
+  {
     "type": "console.navigation/resource-ns",
     "properties": {
       "id": "infra-env",
