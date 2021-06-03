@@ -5,6 +5,7 @@ import { HostsTable, Api } from 'openshift-assisted-ui-lib';
 import { agentcr } from './agentcr';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
+import { AgentKind } from '../../kind';
 
 import './agenttable.scss';
 
@@ -19,17 +20,20 @@ const getColumns = () => [
   { title: '' },
 ];
 
-const AgentTable: React.FC = () => {
+type AgentTableProps = {
+  obj: any;
+}
+
+const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const [hosts] = useK8sWatchResource<K8sResourceCommon[]>({
-    kind: 'agent-install.openshift.io~v1beta1~Agent',
+    kind: AgentKind,
     isList: true,
-    namespaced: true,
+    selector: obj.spec.agentLabelSelector,
   });
 
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
-    namespaced: true,
   });
 
   // mock agent, so we always have at least one
@@ -83,8 +87,7 @@ const AgentTable: React.FC = () => {
         <HostsTable
           hosts={mergedHosts}
           EmptyState={() => <div>empty</div>}
-          clusterStatus="foo"
-          getColumns={getColumns}
+          columns={getColumns()}
         />
       </StackItem>
     </Stack>

@@ -3,7 +3,6 @@ import { match as RMatch } from 'react-router-dom';
 import { DetailsPage, K8sKind } from '@openshift-console/dynamic-plugin-sdk/api';
 import AgentTable from '../Agent/AgentTable';
 import { InfraEnv, KebabAction } from '../types';
-import {} from 'openshift-assisted-ui-lib';
 import {
   ModalDialogsContextProvider,
   useModalDialogsContext,
@@ -11,12 +10,16 @@ import {
   DownloadIsoModal,
   AddBmcModal,
 } from '../modals';
+import InfraDetailsTab from './InfraDetailsTab';
+import { InfraEnvKind } from '../../kind';
 
 import '../styles.scss';
 
 type InfraEnvDetailsProps = {
   match: RMatch;
-};
+  namespace: string;
+  name: string;
+}
 
 const addHostAction =
   (open: ModalDialogsContextType['downloadIsoDialog']['open']): KebabAction =>
@@ -40,26 +43,26 @@ const addBmcAction =
     };
   };
 
-const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = (props) => {
+const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...rest }) => {
   const { downloadIsoDialog, addBmcDialog } = useModalDialogsContext();
 
   const menuActions = [addHostAction(downloadIsoDialog.open), addBmcAction(addBmcDialog.open)];
-
-  const namespace = 'assisted-installer'; // TODO(mlibra), needs rebase
-
-  // name="jtomasek-test-cluster-infraenv"
-  // name="cluster-crd-tj4"
   return (
     <>
       <DetailsPage
-        {...props}
-        kind="agent-install.openshift.io~v1beta1~InfraEnv"
-        name="jtomasek-test-cluster-infraenv"
+        {...rest}
+        kind={InfraEnvKind}
+        name={name}
         namespace={namespace}
         menuActions={menuActions}
         pages={[
           {
-            href: '',
+          href: '',
+          nameKey: 'Details',
+          component: InfraDetailsTab,
+        },
+          {
+            href: 'hosts',
             nameKey: 'Hosts',
             component: AgentTable,
           },
