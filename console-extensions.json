@@ -85,7 +85,18 @@
   {
     "type": "console.page/route",
     "properties": {
-      "path": ["/k8s/:ns/hive.openshift.io~v1~ClusterDeployment/~new"],
+      "exact": true,
+      "path": ["/k8s/ns/:ns/hive.openshift.io~v1~ClusterDeployment/~new"],
+      "component": {
+        "$codeRef": "CreateClusterWizard.default"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": ["/k8s/cluster/hive.openshift.io~v1~ClusterDeployment/~new"],
       "component": {
         "$codeRef": "CreateClusterWizard.default"
       }

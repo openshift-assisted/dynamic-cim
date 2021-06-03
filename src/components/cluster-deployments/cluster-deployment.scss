@@ -1,13 +1,4 @@
-.infra-env__details {
-  padding: 30px;
-}
-
-.infra-env__form {
-  padding: 30px;
-}
-
 /* Fix visibility of the namespace dropdown in OCP */
 .pf-c-wizard__nav {
   z-index: var(--pf-c-dropdown__menu--ZIndex) - 1 !important;
 }
-

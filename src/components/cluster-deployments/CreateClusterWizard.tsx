@@ -1,19 +1,22 @@
 import * as React from 'react';
+import { RouteComponentProps } from 'react-router-dom';
 import { ClusterDeploymentWizard, Api, Types } from 'openshift-assisted-ui-lib';
 import { useK8sModel, k8sCreate } from '@openshift-console/dynamic-plugin-sdk/api';
 import { ClusterDeploymentKind } from '../../kind';
 import { getClusterDeployment, getPullSecretResource, parseStringLabels } from '../../k8s';
 
-const CreateClusterWizard: React.FC = () => {
+import './cluster-deployment.scss';
+
+const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ match }) => {
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
 
+  const namespace = match?.params?.ns || 'assisted-installer';
+
   const onClusterCreate = async (params: Api.ClusterCreateParams) => {
-    console.log('--- TODO: create ClusterDeployment, params: ', params);
     try {
       const { baseDnsDomain: baseDomain, name, pullSecret } = params;
-      const namespace = 'assisted-installer'; // TODO(mlibra)
-      const labels = parseStringLabels(['foo=bar']); // TODO(mlibra)
+      const labels = parseStringLabels(['foo=bar']); // TODO(mlibra): Required by backend but can be selected in a later step; Are we blocked on the "late-binding" BE effort here?
 
       const secret = await k8sCreate(
         secretModel,
@@ -44,6 +47,7 @@ const CreateClusterWizard: React.FC = () => {
 
   return (
     <ClusterDeploymentWizard
+      className="cluster-deployment-wizard"
       onClusterCreate={onClusterCreate}
       pullSecret={pullSecret}
       ocpVersions={ocpVersions}
