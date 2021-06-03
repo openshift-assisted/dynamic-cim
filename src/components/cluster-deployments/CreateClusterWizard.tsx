@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { ClusterDeploymentWizard, Api, Types } from 'openshift-assisted-ui-lib';
-import { useK8sModel, k8sCreate } from '@openshift-console/dynamic-plugin-sdk/api';
-import { ClusterDeploymentKind } from '../../kind';
+import { useK8sModel, k8sCreate, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
+import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { ClusterDeploymentKind, ClusterImageSetKind } from '../../kind';
 import { getClusterDeployment, getPullSecretResource, parseStringLabels } from '../../k8s';
 
 import './cluster-deployment.scss';
@@ -33,16 +34,21 @@ const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ ma
     }
   };
 
+  const [clusterImageSets] = useK8sWatchResource<K8sResourceCommon[]>({
+    kind: ClusterImageSetKind,
+    namespaced: false,
+    isList: true,
+  });
+  const ocpVersions = (clusterImageSets || []).map((clusterImageSet, index): Types.OpenshiftVersionOptionType => {
+    return {
+      label: clusterImageSet.metadata.name,
+      value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
+      default: index === 0,
+      supportLevel: 'beta', // TODO(mlibra): How to get it?
+    };
+  });
+
   const pullSecret = ''; // TODO(mlibra): Query it. The user can overwrite it.
-  const ocpVersions: Types.OpenshiftVersionOptionType[] = [
-    // TODO(mlibra): query it
-    {
-      label: 'foo-4.8',
-      value: 'bar-4.8',
-      default: true,
-      supportLevel: 'beta',
-    },
-  ];
   const usedClusterNames = ['mlibra-01.redhat.com']; // TODO(mlibra): query full cluster names (including baseDnsDomain)
 
   return (
