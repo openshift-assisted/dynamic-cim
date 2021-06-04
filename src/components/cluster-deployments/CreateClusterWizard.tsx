@@ -1,10 +1,15 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { ClusterDeploymentWizard, Api, Types } from 'openshift-assisted-ui-lib';
-import { useK8sModel, k8sCreate, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
+import {
+  useK8sModel,
+  k8sCreate,
+  useK8sWatchResource,
+} from '@openshift-console/dynamic-plugin-sdk/api';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { ClusterDeploymentKind, ClusterImageSetKind } from '../../kind';
 import { getClusterDeployment, getPullSecretResource, parseStringLabels } from '../../k8s';
+import { ClusterDeploymentK8sResource } from '../types';
 
 import './cluster-deployment.scss';
 
@@ -13,6 +18,7 @@ const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ ma
   const [secretModel] = useK8sModel('core~v1~Secret');
 
   const namespace = match?.params?.ns || 'assisted-installer';
+  const pullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
   const onClusterCreate = async (params: Api.ClusterCreateParams) => {
     try {
@@ -39,17 +45,27 @@ const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ ma
     namespaced: false,
     isList: true,
   });
-  const ocpVersions = (clusterImageSets || []).map((clusterImageSet, index): Types.OpenshiftVersionOptionType => {
-    return {
-      label: clusterImageSet.metadata.name,
-      value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
-      default: index === 0,
-      supportLevel: 'beta', // TODO(mlibra): How to get it?
-    };
-  });
+  const ocpVersions = (clusterImageSets || []).map(
+    (clusterImageSet, index): Types.OpenshiftVersionOptionType => {
+      return {
+        label: clusterImageSet.metadata.name,
+        value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
+        default: index === 0,
+        supportLevel: 'beta', // TODO(mlibra): How to get it?
+      };
+    },
+  );
 
-  const pullSecret = ''; // TODO(mlibra): Query it. The user can overwrite it.
-  const usedClusterNames = ['mlibra-01.redhat.com']; // TODO(mlibra): query full cluster names (including baseDnsDomain)
+  const [clusterDeployments] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
+    kind: ClusterDeploymentKind,
+    namespace, // TODO(mlibra): Double check that we want validate cluster name for namespace-only
+    namespaced: true,
+    isList: true,
+  });
+  const usedClusterNames = (clusterDeployments || []).map(
+    (clusterDeployment): string =>
+      `${clusterDeployment.metadata.name}.${clusterDeployment.spec?.baseDomain}`,
+  );
 
   return (
     <ClusterDeploymentWizard
