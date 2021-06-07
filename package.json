@@ -81,7 +81,7 @@
     "exposedModules": {
       "InfraListPage": "./components/Infra/InfraListPage.tsx",
       "InfraEnvDetails": "./components/Infra/InfraEnvDetailsPage.tsx",
-      "InfraEnvWizard": "./components/Infra/InfraEnvWizard.tsx",
+      "InfraEnvForm": "./components/Infra/InfraEnvForm.tsx",
       "ClusterDeploymentsListPage": "./components/cluster-deployments/ClusterDeploymentsListPage.tsx",
       "ClusterDeploymentDetails": "./components/cluster-deployments/ClusterDeploymentDetails.tsx"
     },

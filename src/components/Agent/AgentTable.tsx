@@ -2,9 +2,9 @@ import * as React from 'react';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
 import { HostsTable, Api } from 'openshift-assisted-ui-lib';
-import { agentcr } from './agentcr';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
+
 import { AgentKind } from '../../kind';
 
 import './agenttable.scss';
@@ -35,9 +35,6 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
     kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
   });
-
-  // mock agent, so we always have at least one
-  hosts.push(agentcr);
 
   const restHosts = hosts.map((h: any) => {
     const restHost: Api.Host = {

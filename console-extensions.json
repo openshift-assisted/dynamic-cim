@@ -39,7 +39,7 @@
       "exact": true,
       "path": ["/k8s/ns/:ns/agent-install.openshift.io~v1beta1~InfraEnv/~new"],
       "component": {
-        "$codeRef": "InfraEnvWizard.default"
+        "$codeRef": "InfraEnvForm.default"
       }
     }
   },
