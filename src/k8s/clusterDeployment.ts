@@ -1,13 +1,13 @@
 export const getClusterDeployment = ({
   name,
   namespace,
-  baseDomain,
+  baseDnsDomain,
   labels,
   pullSecretName,
 }: {
   name: string;
   namespace: string;
-  baseDomain: string;
+  baseDnsDomain: string;
   labels: string;
   pullSecretName: string;
 }) => ({
@@ -18,7 +18,7 @@ export const getClusterDeployment = ({
     namespace,
   },
   spec: {
-    baseDomain: baseDomain,
+    baseDomain: baseDnsDomain,
     clusterInstallRef: {
       group: 'extensions.hive.openshift.io',
       kind: 'AgentClusterInstall',
