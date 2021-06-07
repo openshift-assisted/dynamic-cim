@@ -35,7 +35,7 @@ type InfraListPageProps = {
   namespace: string;
 }
 
-const InfraListPage: React.FC<InfraListPageProps> = ({namespace }) => {
+const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
 
   const [infras, loaded, loadError] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: InfraEnvKind,
@@ -46,7 +46,7 @@ const InfraListPage: React.FC<InfraListPageProps> = ({namespace }) => {
   return (
     <>
       <ListPageHeader title="Infrastructures">
-        <ListPageCreate groupVersionKind={InfraEnvKind}>
+        <ListPageCreate groupVersionKind={InfraEnvKind} namespace={namespace || "assisted-installer"}>
           Create
         </ListPageCreate>
       </ListPageHeader>

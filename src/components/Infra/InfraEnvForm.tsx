@@ -1,16 +1,15 @@
 import * as React from 'react'
-import { InfraWizard } from 'openshift-assisted-ui-lib';
+import { InfraEnvForm } from 'openshift-assisted-ui-lib';
 import { useK8sModel, k8sCreate, history, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { load } from 'js-yaml';
 
 import { InfraEnvKind } from '../../kind';
 
 import '../styles.scss';
+import './infra.scss';
 
 const InfraEnvWizard: React.FC = () => {
   const [infraModel] = useK8sModel(InfraEnvKind);
-  const [nmStateModel] = useK8sModel('agent-install.openshift.io~v1beta1~NMStateConfig');
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel('hive.openshift.io~v1~ClusterDeployment');
   const [agentClusterInstallModel] = useK8sModel('extensions.hive.openshift.io~v1beta1~AgentClusterInstall');
@@ -109,6 +108,7 @@ const InfraEnvWizard: React.FC = () => {
         agentLabelSelector: {
           matchLabels: labels,
         },
+        agentLabels: labels,
         clusterRef: {
           name: values.name,
           namespace: 'assisted-installer',
@@ -128,36 +128,17 @@ const InfraEnvWizard: React.FC = () => {
       }
     }
 
-    const networks = [];
-
-    values.networks.forEach((n) => {
-      let config;
-      try {
-        config = load(n.config); 
-      } catch {
-        return;
-      }
-      if (n.mac && config?.metadata?.labels) {
-        networks.push({ mac: n.mac, config })
-      }
-    });
-
-    if (networks.length) {
-      (infraEnv as any).spec.nmStateConfigLabelSelector = {
-        matchLabels: networks[0].config.metadata.labels,
-      };
-      await k8sCreate(nmStateModel, networks[0].config);
-    }
-
     return k8sCreate(infraModel, infraEnv);
   }, [infraModel]);
   return (
-    <InfraWizard
-      usedNames={usedNames}
-      onSubmit={onSubmit}
-      onFinish={(values) => history.push(`/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/${values.name}`)}
-      onClose={() => history.push('/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/')}
-    />
+    <div className="infra-env__form">
+      <InfraEnvForm
+        usedNames={usedNames}
+        onSubmit={onSubmit}
+        onFinish={(values) => history.push(`/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/${values.name}`)}
+        onClose={() => history.push('/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/')}
+      />
+    </div>
   );
 }
 
