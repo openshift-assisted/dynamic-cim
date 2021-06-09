@@ -1,21 +1,25 @@
 import * as React from 'react'
 import { InfraEnvForm } from 'openshift-assisted-ui-lib';
 import { useK8sModel, k8sCreate, history, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 
-import { InfraEnvKind } from '../../kind';
+import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
+import { InfraEnv } from '../types';
 
 import '../styles.scss';
 import './infra.scss';
 
-const InfraEnvWizard: React.FC = () => {
+type InfraEnvWizardProps = {
+  namespace: string;
+}
+
+const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ namespace }) => {
   const [infraModel] = useK8sModel(InfraEnvKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
-  const [clusterDepModel] = useK8sModel('hive.openshift.io~v1~ClusterDeployment');
-  const [agentClusterInstallModel] = useK8sModel('extensions.hive.openshift.io~v1beta1~AgentClusterInstall');
-  const [infraEnvs] = useK8sWatchResource<K8sResourceCommon[]>({
+  const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
+  const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
+  const [infraEnvs] = useK8sWatchResource<InfraEnv[]>({
     kind: InfraEnvKind,
-    namespace: 'assisted-installer',
+    namespace,
     isList: true,
   });
   const usedNames = infraEnvs.map((env) => env.metadata.name);
@@ -25,7 +29,7 @@ const InfraEnvWizard: React.FC = () => {
       apiVersion: 'v1',
       metadata: {
         name: values.name,
-        namespace: 'assisted-installer'
+        namespace,
       },
       data: {
         '.dockerconfigjson': btoa(values.pullSecret),
@@ -43,7 +47,7 @@ const InfraEnvWizard: React.FC = () => {
       kind: 'ClusterDeployment',
       metadata: {
         name: values.name,
-        namespace: 'assisted-installer',
+        namespace,
       },
       spec: {
         baseDomain: values.baseDomain,
@@ -71,7 +75,7 @@ const InfraEnvWizard: React.FC = () => {
       kind: 'AgentClusterInstall',
       metadata: {
         name: values.name,
-        namespace: 'assisted-installer',
+        namespace,
       },
       spec: {
         clusterDeploymentRef: {
@@ -94,12 +98,12 @@ const InfraEnvWizard: React.FC = () => {
       },
     });
 
-    const infraEnv = {
+    const infraEnv: InfraEnv = {
       apiVersion: 'agent-install.openshift.io/v1beta1',
       kind: 'InfraEnv',
       metadata: {
         name: values.name,
-        namespace: 'assisted-installer',
+        namespace,
         labels: {
           'assisted-install-location': values.location,
         }
@@ -111,7 +115,7 @@ const InfraEnvWizard: React.FC = () => {
         agentLabels: labels,
         clusterRef: {
           name: values.name,
-          namespace: 'assisted-installer',
+          namespace,
         },
         pullSecretRef: {
           name: values.name,
@@ -121,7 +125,7 @@ const InfraEnvWizard: React.FC = () => {
     };
 
     if (values.enableProxy) {
-      (infraEnv as any).spec.proxy = {
+      infraEnv.spec.proxy = {
         httpProxy: values.httpProxy,
         httpsProxy: values.httpsProxy,
         noProxy: values.noProxy,
@@ -135,8 +139,8 @@ const InfraEnvWizard: React.FC = () => {
       <InfraEnvForm
         usedNames={usedNames}
         onSubmit={onSubmit}
-        onFinish={(values) => history.push(`/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/${values.name}`)}
-        onClose={() => history.push('/k8s/ns/assisted-installer/agent-install.openshift.io~v1beta1~InfraEnv/')}
+        onFinish={(values) => history.push(`/k8s/ns/${namespace}/${InfraEnvKind}/${values.name}`)}
+        onClose={() => history.push(`/k8s/ns/${namespace}/${InfraEnvKind}/`)}
       />
     </div>
   );

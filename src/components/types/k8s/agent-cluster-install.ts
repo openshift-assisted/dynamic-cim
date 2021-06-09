@@ -8,4 +8,7 @@ export type AgentClusterInstallK8sResource = K8sResourceCommon & {
       name?: string;
     };
   };
+  status?: {
+    connectivityMajorityGroups?: string;
+  };
 };
