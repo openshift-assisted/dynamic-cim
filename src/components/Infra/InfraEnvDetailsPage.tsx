@@ -12,6 +12,7 @@ import {
 } from '../modals';
 import InfraDetailsTab from './InfraDetailsTab';
 import { InfraEnvKind } from '../../kind';
+import InfraPatchTab from './InfraPatchTab';
 
 import '../styles.scss';
 
@@ -65,6 +66,11 @@ const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...r
             href: 'hosts',
             nameKey: 'Hosts',
             component: AgentTable,
+          },
+          {
+            href: 'patch',
+            nameKey: 'Patch',
+            component: InfraPatchTab,
           },
         ]}
       />

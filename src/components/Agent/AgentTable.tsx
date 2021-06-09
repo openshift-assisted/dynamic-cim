@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
-import { HostsTable, Api } from 'openshift-assisted-ui-lib';
+import { useK8sWatchResource, k8sPatch, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
+import { HostsTable, Api, LoadingState } from 'openshift-assisted-ui-lib';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
 
 import { AgentKind } from '../../kind';
+import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
+import EditHostModal from '../modals/EditHostModal';
+import { InfraEnv } from '../types';
 
 import './agenttable.scss';
 
@@ -21,20 +24,24 @@ const getColumns = () => [
 ];
 
 type AgentTableProps = {
-  obj: any;
+  obj: InfraEnv;
 }
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
-  const [hosts] = useK8sWatchResource<K8sResourceCommon[]>({
+  const { editHostModal } = useModalDialogsContext();
+  const [ agentModel ] = useK8sModel(AgentKind);
+  const [hosts, loaded] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: AgentKind,
     isList: true,
     selector: obj.spec.agentLabelSelector,
   });
 
+  /*
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
   });
+  */
 
   const restHosts = hosts.map((h: any) => {
     const restHost: Api.Host = {
@@ -44,7 +51,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
       status: 'known',
       statusInfo: 'foo',
       inventory: JSON.stringify(h.status.inventory),
-      requestedHostname: h.status.hostname,
+      requestedHostname: h.spec.hostname,
       role: h.spec.role,
       createdAt: h.metadata.creationTimestamp,
     };
@@ -52,6 +59,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   });
 
   // TODO(mlibra): filter-out BMHs which have already Agents
+  /*
   const restBmhs = baremetalhosts.map((h: any) => {
     const hostInventory: Api.Inventory = {
       hostname: h.metadata.name,
@@ -76,19 +84,62 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
 
     return restBmh;
   });
-  const mergedHosts = [...restHosts, ...restBmhs];
+  */
+  const mergedHosts = [...restHosts]; //, ...restBmhs];
 
   return (
-    <Stack className="agent-table">
-      <StackItem>
-        <HostsTable
-          hosts={mergedHosts}
-          EmptyState={() => <div>empty</div>}
-          columns={getColumns()}
-        />
-      </StackItem>
-    </Stack>
+    <>
+      <Stack className="agent-table">
+        <StackItem>
+          {loaded ? (
+            <HostsTable
+              hosts={mergedHosts}
+              EmptyState={() => <div>no hosts</div>}
+              columns={getColumns()}
+              canEditHost={() => true}
+              onEditHost={(host, inventory) =>
+                editHostModal.open({
+                  host,
+                  inventory,
+                  usedHostnames: [],
+                  onSave: async ({ hostname, hostId }) => {
+                    const host = hosts.find((h) => h.metadata.uid === hostId);
+                    await k8sPatch(agentModel, host, [{
+                      op: 'add',
+                      path: `/spec/hostname`,
+                      value: hostname,
+                    },
+                    {
+                      op: 'replace',
+                      path: `/spec/approved`,
+                      value: true,
+                    }]);
+                  },
+                })
+              }
+              canEditRole={() => true}
+              onEditRole={async (host, role) => {
+                const agent = hosts.find((h) => h.metadata.uid === host.id);
+                await k8sPatch(agentModel, agent, [{
+                  op: 'replace',
+                  path: `/spec/role`,
+                  value: role,
+                }]);
+              }}
+            />
+          ) : (
+            <LoadingState />
+          )}
+        </StackItem>
+      </Stack>
+      <EditHostModal />
+    </>
   );
 };
 
-export default AgentTable;
+
+export default (props: AgentTableProps) => (
+  <ModalDialogsContextProvider>
+    <AgentTable {...props} />
+  </ModalDialogsContextProvider>
+);

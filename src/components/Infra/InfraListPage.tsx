@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -14,14 +13,15 @@ import {
 import { Link } from 'react-router-dom';
 
 import { InfraEnvKind } from '../../kind';
+import { InfraEnv } from '../types';
 
-const columns: TableColumn<K8sResourceCommon>[] = [
+const columns: TableColumn<InfraEnv>[] = [
   {
     title: 'Name',
   },
 ];
 
-const InfraRow: React.FC<RowProps<K8sResourceCommon>> = ({ obj, index, style }) => (
+const InfraRow: React.FC<RowProps<InfraEnv>> = ({ obj, index, style }) => (
   <TableRow id={obj.metadata.uid} index={index} trKey={obj.metadata.uid} style={style}>
     <TableData>
       <Link to={`/k8s/ns/${obj.metadata.namespace}/${InfraEnvKind}/${obj.metadata.name}`}>
@@ -37,7 +37,7 @@ type InfraListPageProps = {
 
 const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
 
-  const [infras, loaded, loadError] = useK8sWatchResource<K8sResourceCommon[]>({
+  const [infras, loaded, loadError] = useK8sWatchResource<InfraEnv[]>({
     kind: InfraEnvKind,
     isList: true,
     namespace,
