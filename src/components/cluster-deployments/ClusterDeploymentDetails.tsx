@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
+import { sortable, expandable } from '@patternfly/react-table';
 import {
   DetailsPage,
   PageComponentProps,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import { ClusterProgress, LoadingState } from 'openshift-assisted-ui-lib';
+import { ClusterProgress, HostsTable, LoadingState } from 'openshift-assisted-ui-lib';
 import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
 import {
   AgentClusterInstallK8sResource,
@@ -42,6 +43,17 @@ type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploym
   agentClusterInstall: K8sResourceCommon;
 };
 
+const columns = [
+  { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
+  { title: 'Role', transforms: [sortable] },
+  { title: 'Status', transforms: [sortable] },
+  { title: 'Discovered At', transforms: [sortable] },
+  { title: 'CPU Cores', transforms: [sortable] }, // cores per machine (sockets x cores)
+  { title: 'Memory', transforms: [sortable] },
+  { title: 'Disk', transforms: [sortable] },
+  { title: '' },
+];
+
 export const ClusterDetail = (props: DetailsTabProps) => {
   const { obj: clusterDeployment } = props;
 
@@ -75,8 +87,14 @@ export const ClusterDetail = (props: DetailsTabProps) => {
     <div className="co-m-pane__body">
       {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre>
       <pre style={{ fontSize: 10 }}>{JSON.stringify(agentClusterInstall, null, 2)}</pre>
-      <pre style={{ fontSize: 10 }}>{JSON.stringify(agents.length, null, 2)}</pre> */}
+      <pre style={{ fontSize: 10 }}>{JSON.stringify(agents.length, null, 2)}</pre>
+      <pre style={{ fontSize: 10 }}>{JSON.stringify(agents, null, 2)}</pre> */}
       <ClusterProgress cluster={cluster} />
+      <HostsTable
+        hosts={cluster.hosts}
+        EmptyState={() => <div>empty</div>}
+        columns={columns}
+      />
     </div>
   );
 };
