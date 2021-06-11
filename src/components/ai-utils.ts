@@ -22,7 +22,7 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
 export const getAICluster = ({
   clusterDeployment,
   agentClusterInstall,
-  agents,
+  agents = [],
   status = 'installing',
 }: {
   clusterDeployment: ClusterDeploymentK8sResource;

@@ -103,6 +103,16 @@
     }
   },
   {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": ["/k8s/ns/:ns/hive.openshift.io~v1~ClusterDeployment/:name/edit"],
+      "component": {
+        "$codeRef": "EditClusterWizard.default"
+      }
+    }
+  },
+  {
     "type": "console.navigation/resource-ns",
     "properties": {
       "id": "infra-env",
