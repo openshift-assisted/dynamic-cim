@@ -1,16 +1,18 @@
+export type ClusterDeploymentParams = {
+  name: string;
+  namespace: string;
+  baseDnsDomain: string;
+  labels: string;
+  pullSecretName: string;
+};
+
 export const getClusterDeployment = ({
   name,
   namespace,
   baseDnsDomain,
   labels,
   pullSecretName,
-}: {
-  name: string;
-  namespace: string;
-  baseDnsDomain: string;
-  labels: string;
-  pullSecretName: string;
-}) => ({
+}: ClusterDeploymentParams) => ({
   apiVersion: 'hive.openshift.io/v1',
   kind: 'ClusterDeployment',
   metadata: {

@@ -24,11 +24,13 @@ export const getAICluster = ({
   agentClusterInstall,
   agents = [],
   status = 'installing',
+  pullSecretSet = false,
 }: {
   clusterDeployment: ClusterDeploymentK8sResource;
   agentClusterInstall?: AgentClusterInstallK8sResource;
   agents?: AgentK8sResource[];
   status?: AICluster['status'];
+  pullSecretSet?: boolean;
 }): AICluster => ({
   id: clusterDeployment.metadata.uid,
   kind: 'Cluster',
@@ -42,4 +44,5 @@ export const getAICluster = ({
   imageInfo: {},
   monitoredOperators: [],
   hosts: getAIHosts(agents),
+  pullSecretSet,
 });

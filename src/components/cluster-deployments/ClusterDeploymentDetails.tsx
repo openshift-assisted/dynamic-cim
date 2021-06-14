@@ -54,10 +54,11 @@ export const ClusterDetail = (props: DetailsTabProps) => {
       isList: false,
     });
 
+  const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>({
     kind: AgentKind,
     isList: true,
-    selector: clusterDeployment.spec.platform.agentBareMetal.agentSelector,
+    selector: agentSelector || '___missing___',
     namespaced: true,
   });
 

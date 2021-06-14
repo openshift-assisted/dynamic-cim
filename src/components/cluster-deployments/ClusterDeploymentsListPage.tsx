@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { Dropdown, DropdownItem, DropdownProps, KebabToggle } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -11,12 +12,11 @@ import {
   TableRow,
   TableData,
   history,
-  //  ListPageCreate,
+  ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
-import { Button, Dropdown, DropdownItem, DropdownProps, KebabToggle } from '@patternfly/react-core';
 
 const columns: TableColumn<K8sResourceCommon>[] = [
   {
@@ -50,7 +50,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   const kebabActions = [
     <DropdownItem
       key="edit"
-      component={Button}
+      component="button"
       onClick={() => history.push(`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`)}
     >
       Edit
@@ -106,9 +106,7 @@ const ClusterDeploymentsListPage: React.FC = () => {
   return (
     <>
       <ListPageHeader title="Clusters">
-        {/* TODO(mlibra): re-enable later, let's implement the Edit flow first
-        <ListPageCreate groupVersionKind={ClusterDeploymentKind}>Create Cluster</ListPageCreate>
-        */}
+        {<ListPageCreate groupVersionKind={ClusterDeploymentKind}>Create Cluster</ListPageCreate>}
       </ListPageHeader>
       <ListPageBody>
         <VirtualizedTable

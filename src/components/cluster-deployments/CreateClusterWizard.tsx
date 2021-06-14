@@ -7,12 +7,7 @@ import './cluster-deployment.scss';
 const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ match, history }) => {
   const namespace = match?.params?.ns || 'assisted-installer';
 
-  return (
-    <ClusterDeploymentWizard
-      history={history}
-      namespace={namespace}
-    />
-  );
+  return <ClusterDeploymentWizard history={history} namespace={namespace} />;
 };
 
 export default CreateClusterWizard;
