@@ -22,13 +22,18 @@ const EditClusterWizard: React.FC<RouteComponentProps<{ ns: string; name: string
     });
 
   // it is ok if missing
-  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>({
-    kind: AgentClusterInstallKind,
-    name: clusterDeployment?.spec?.clusterInstallRef?.name || '___missing__',
-    namespace,
-    namespaced: true,
-    isList: false,
-  });
+  const clusterInstallRefName = clusterDeployment?.spec?.clusterInstallRef?.name;
+  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>(
+    clusterInstallRefName
+      ? {
+          kind: AgentClusterInstallKind,
+          name: clusterInstallRefName,
+          namespace,
+          namespaced: true,
+          isList: false,
+        }
+      : undefined,
+  );
 
   if (!clusterDeploymentLoaded) {
     // TODO(mlibra): render Loading state

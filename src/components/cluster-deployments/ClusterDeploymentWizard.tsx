@@ -5,12 +5,18 @@ import {
   ClusterDeploymentDetailsValues,
   Types,
 } from 'openshift-assisted-ui-lib';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
+import {
+  useK8sWatchResource,
+  k8sCreate,
+  k8sPatch,
+  useK8sModel,
+} from '@openshift-console/dynamic-plugin-sdk/api';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { ClusterDeploymentKind, ClusterImageSetKind } from '../../kind';
+import { AgentClusterInstallKind, ClusterDeploymentKind, ClusterImageSetKind } from '../../kind';
 import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
 import { getAICluster } from '../ai-utils';
-// import { ClusterDeploymentParams, getClusterDeployment, getPullSecretResource } from '../../k8s';
+import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
+import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -18,34 +24,28 @@ type ClusterDeploymentWizardProps = {
   clusterDeployment?: ClusterDeploymentK8sResource;
   agentClusterInstall?: AgentClusterInstallK8sResource;
 };
-/* Not needed, we are passing AI Cluster object
-const getWizardValues = (
-  clusterDeployment?: ClusterDeploymentK8sResource,
-  agentClusterInstall?: AgentClusterInstallK8sResource,
-): ClusterDeploymentWizardValues|undefined => {
-  if (!clusterDeployment) {
-    return undefined;
-  }
-  return {
-    name: clusterDeployment.metadata.name,
-    highAvailabilityMode: 'Full', // TODO(mlibra)
-    openshiftVersion: ;
-    pullSecret: string;
-    baseDnsDomain: string;
-    SNODisclaimer: boolean;
-    useRedHatDnsService: boolean;
 
-  };
-};
-*/
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
   namespace,
-  clusterDeployment,
-  agentClusterInstall,
+  clusterDeployment: queriedClusterDeployment,
+  agentClusterInstall: queriedAgentClusterInstall,
 }) => {
-  // const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
-  // const [secretModel] = useK8sModel('core~v1~Secret');
+  const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
+  const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
+  const [secretModel] = useK8sModel('core~v1~Secret');
+
+  const [clusterDeployment, setClusterDeployment] =
+    React.useState<ClusterDeploymentK8sResource>(queriedClusterDeployment);
+  const [agentClusterInstall, setAgentClusterInstall] =
+    React.useState<AgentClusterInstallK8sResource>(queriedAgentClusterInstall);
+
+  React.useEffect(() => {
+    setClusterDeployment(queriedClusterDeployment);
+  }, [clusterDeployment !== queriedClusterDeployment]);
+  React.useEffect(() => {
+    setAgentClusterInstall(queriedAgentClusterInstall);
+  }, [agentClusterInstall !== queriedAgentClusterInstall]);
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
@@ -74,52 +74,113 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const usedClusterNames = (clusterDeployments || [])
     .filter((cd) => !clusterDeployment || clusterDeployment.metadata.uid !== cd.metadata.uid)
     .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`);
-  /*
-  const wizardValues: ClusterDeploymentWizardValues = React.useMemo(
-    () => getWizardValues(clusterDeployments, agentClusterInstall) || getClusterDeploymentWizardEmptyValues(ocpVersions, defaultPullSecret),
-    [clusterDeployments, agentClusterInstall, ocpVersions],
+
+  const onClusterCreate = React.useCallback(
+    async ({ pullSecret, openshiftVersion, ...params }: ClusterDeploymentDetailsValues) => {
+      try {
+        const { name } = params;
+        const labels = undefined; // parseStringLabels(['foo=bar']); // TODO(mlibra): Required by backend but can be selected in a later step
+
+        const secret = await k8sCreate(
+          secretModel,
+          getPullSecretResource({ namespace, name, pullSecret }),
+        );
+        const pullSecretName = secret?.metadata?.name;
+        const createdClusterDeployment = await k8sCreate(
+          clusterDeploymentModel,
+          getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
+        );
+        setClusterDeployment(createdClusterDeployment);
+
+        const agentClusterInstall = await k8sCreate(
+          agentClusterInstallModel,
+          getAgentClusterInstall({
+            name,
+            clusterDeploymentRefName: createdClusterDeployment.metadata.name,
+            namespace,
+            ocpVersion: openshiftVersion,
+            /* will be updated in a next step
+            controlPlaneAgents: 3, 
+            sshPublicKey: values.sshPublicKey,
+            clusterNetworkCidr: '10.128.0.0/14',
+            clusterNetworkHostPrefix: 23,
+            serviceNetwork: '172.30.0.0/16',
+            apiVip,
+            ingressVip,
+            */
+          }),
+        );
+        setAgentClusterInstall(agentClusterInstall);
+
+        // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
+      } catch (e) {
+        // A string-only is expected. Or change the ClusterDeploymentDetails in the assisted-ui-lib
+        throw `Failed to cretate the ClusterDeployment or gentClusterInstall resource: ${e.message}`;
+      }
+    },
+    [setClusterDeployment, setAgentClusterInstall, namespace],
   );
-  */
 
-  // const onClusterCreate = async ({ pullSecret, ...params }: ClusterDeploymentParams & { pullSecret: string}) => {
-  //   try {
-  //     const { name } = params;
-  //     const labels = undefined; // parseStringLabels(['foo=bar']); // TODO(mlibra): Required by backend but can be selected in a later step
+  const onClusterDetailsUpdate = React.useCallback(
+    async (values: ClusterDeploymentDetailsValues) => {
+      // do we need to re-query the ClusterDeployment??
+      try {
+        const clusterDeploymentPatches = [];
+        const agentClusterInstallPatches = [];
 
-  //     const secret = await k8sCreate(
-  //       secretModel,
-  //       getPullSecretResource({ namespace, name, pullSecret }),
-  //     );
-  //     const pullSecretName = secret?.metadata?.name;
-  //     await k8sCreate(
-  //       clusterDeploymentModel,
-  //       getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
-  //     );
+        // pullSecret, highAvailabilityMode, useRedHatDnsService can not be changed
 
-  //     // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
-  //     // TODO(mlibra): create AgentClusterInstall
-  //   } catch (e) {
-  //     // A string-only is expected. or change ClusterDeploymentDetails in the assisted-ui-lib
-  //     throw `Failed to cretate the ClusterDeployment resource: ${e.message}`;
-  //   }
-  // };
+        /* TODO(mlibra): Uncomment once we can update the ClusterDeployment resource
+      Issue: Failed to patch the ClusterDeployment resource: admission webhook "clusterdeploymentvalidators.admission.hive.openshift.io" denied
+      the request: Attempted to change ClusterDeployment.Spec which is immutable 
+      except for CertificateBundles,ClusterMetadata,ControlPlaneConfig,Ingress,Installed,PreserveOnDelete,ClusterPoolRef,PowerState,HibernateAfter,InstallAttemptsLimit,MachineManagement fields.
+      Unsupported change: ClusterName: (mlibra-05 => mlibra-07)
 
-  // const onClusterSave = async (params: ClusterDeploymentWizardValues) => {
-  //   console.log('--- onClusterSave: ', params);
+        appendPatch(clusterDeploymentPatches, '/spec/clusterName', values.name, clusterDeployment.spec?.clusterName);
+        appendPatch(
+          clusterDeploymentPatches,
+          '/spec/baseDomain',
+          values.baseDnsDomain,
+          clusterDeployment.spec?.baseDomain,
+        );
+        */
 
-  //   // TODO(mlibra): Decide about create vs. update
-  //   await onClusterCreate(params);
-  // };
+        // TODO(mlibra): set values.openshiftVersion to agentClusterInstall?.spec?.imageSetRef?.name
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/imageSetRef/name',
+          values.openshiftVersion,
+          agentClusterInstall.spec.imageSetRef?.name,
+        );
 
-  const onSaveDetails = React.useMemo(
-    () => async (values: ClusterDeploymentDetailsValues) => {
-      console.log('--- onSaveDetails, values: ', values);
+        if (clusterDeploymentPatches.length > 0) {
+          await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
+        }
+        if (agentClusterInstallPatches.length > 0) {
+          await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
+        }
+      } catch (e) {
+        throw `Failed to patch the ClusterDeployment or AgentClusterInstall resource: ${e.message}`;
+      }
     },
     [],
   );
 
+  const onSaveDetails = React.useCallback(
+    async (values: ClusterDeploymentDetailsValues) => {
+      if (clusterDeployment) {
+        // we have already either queried (the Edit flow) or created it
+        await onClusterDetailsUpdate(values);
+      } else {
+        await onClusterCreate(values);
+      }
+    },
+    [onClusterCreate, onClusterDetailsUpdate, clusterDeployment],
+  );
+
   const onClose = () => {
-    history.push(`/k8s/ns/${namespace || 'all-namespaces'}/${ClusterDeploymentKind}`);
+    const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
+    history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
   };
 
   const aiCluster = clusterDeployment
@@ -133,7 +194,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
       ocpVersions={ocpVersions}
       cluster={aiCluster}
       usedClusterNames={usedClusterNames}
-      // onClusterSave={onClusterSave}
       onClose={onClose}
       onSaveDetails={onSaveDetails}
     />

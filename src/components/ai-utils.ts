@@ -37,6 +37,7 @@ export const getAICluster = ({
   href: '',
   name: clusterDeployment.spec.clusterName,
   baseDnsDomain: clusterDeployment.spec.baseDomain,
+  openshiftVersion: agentClusterInstall?.spec?.imageSetRef?.name,
   apiVip: agentClusterInstall?.spec?.apiVip,
   ingressVip: agentClusterInstall?.spec?.ingressVip,
   status,
