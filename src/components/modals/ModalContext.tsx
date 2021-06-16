@@ -1,7 +1,5 @@
 import * as React from 'react';
 import { Reducers } from 'openshift-assisted-ui-lib';
-import { Host, Inventory } from 'openshift-assisted-ui-lib/dist/src/api';
-import { HostUpdateParams } from 'openshift-assisted-ui-lib/dist/src/components/hosts/EditHostForm';
 
 const {
   dialogsReducer,
@@ -9,7 +7,7 @@ const {
   closeDialog: closeDialogAction,
 } = Reducers.Dialogs;
 
-type DialogId = 'downloadIsoDialog' | 'addBmcDialog' | 'editHostModal';
+type DialogId = 'downloadIsoDialog' | 'addBmcDialog';
 
 type DownloadIsoDialogProps = {
   fileName: string;
@@ -18,17 +16,9 @@ type DownloadIsoDialogProps = {
 
 type AddBmcDialogProps = {};
 
-type EditHostModal = {
-  host?: Host;
-  inventory?: Inventory;
-  usedHostnames: string[] | undefined;
-  onSave: (values: HostUpdateParams) => Promise<any>;
-};
-
 type ModalDialogsDataTypes = {
   downloadIsoDialog: DownloadIsoDialogProps;
   addBmcDialog: AddBmcDialogProps;
-  editHostModal: EditHostModal;
 };
 
 export type ModalDialogsContextType = {
@@ -40,7 +30,7 @@ export type ModalDialogsContextType = {
   };
 };
 
-const dialogIds: DialogId[] = ['downloadIsoDialog', 'addBmcDialog', 'editHostModal'];
+const dialogIds: DialogId[] = ['downloadIsoDialog', 'addBmcDialog'];
 
 const ModalDialogsContext = React.createContext<ModalDialogsContextType | undefined>(undefined);
 
