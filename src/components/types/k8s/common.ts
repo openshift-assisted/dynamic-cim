@@ -2,7 +2,7 @@ export type StatusCondition<ConditionType> = {
   lastTransitionTime: string;
   message: string;
   reason: string;
-  status: 'True' | 'False';
+  status: 'True' | 'False' | 'Unknown';
   type: ConditionType;
 };
 

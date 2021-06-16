@@ -6,6 +6,7 @@ import {
   AgentStatusCondition,
   AgentClusterInstallStatusConditionType,
   AgentClusterInstallStatusCondition,
+  StatusCondition,
 } from './types';
 import { Cluster as AICluster, Host as AIHost } from 'openshift-assisted-ui-lib/dist/src/api';
 
@@ -116,3 +117,11 @@ export const getAICluster = ({
     pullSecretSet,
   };
 };
+
+export const getClusterValidatedCondition = (resource: AgentClusterInstallK8sResource) =>
+  resource.status.conditions.find((c) => c.type === 'Validated') as StatusCondition<'Validated'>;
+
+export const getAgentValidatedCondition = (agentClusterInstall: AgentK8sResource) =>
+  agentClusterInstall.status.conditions.find(
+    (c) => c.type === 'Validated',
+  ) as StatusCondition<'Validated'>;

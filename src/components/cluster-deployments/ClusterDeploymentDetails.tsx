@@ -14,7 +14,8 @@ import {
   ClusterDeploymentK8sResource,
 } from '../types';
 import { AgentClusterInstallKind, AgentKind } from '../../kind';
-import { getAICluster } from '../ai-utils';
+import { getAICluster, getClusterValidatedCondition } from '../ai-utils';
+import ValidatedConditionAlert from './ValidatedConditionAlert';
 
 type ClusterDeploymentDetailsProps = {
   match: RMatch<{ name: string }>;
@@ -90,11 +91,8 @@ export const ClusterDetail = (props: DetailsTabProps) => {
       <pre style={{ fontSize: 10 }}>{JSON.stringify(agents.length, null, 2)}</pre>
       <pre style={{ fontSize: 10 }}>{JSON.stringify(agents, null, 2)}</pre> */}
       <ClusterProgress cluster={cluster} />
-      <HostsTable
-        hosts={cluster.hosts}
-        EmptyState={() => <div>empty</div>}
-        columns={columns}
-      />
+      <HostsTable hosts={cluster.hosts} EmptyState={() => <div>empty</div>} columns={columns} />
+      <ValidatedConditionAlert condition={getClusterValidatedCondition(agentClusterInstall)} />
     </div>
   );
 };
