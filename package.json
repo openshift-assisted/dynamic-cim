@@ -10,7 +10,8 @@
     "dev": "yarn clean && yarn ts-node ./node_modules/.bin/webpack serve",
     "http-server": "./http-server.sh ./dist",
     "ts-node": "ts-node -O '{\"module\":\"commonjs\"}' -I '/node_modules/(?!(@console)/)/'",
-    "prettier-all": "prettier --write '**/*.{js,jsx,ts,tsx,json}'"
+    "prettier-all": "prettier --write '**/*.{js,jsx,ts,tsx,json}'",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx --color ./src"
   },
   "dependencies": {
     "@patternfly/react-code-editor": "^4.1.25",

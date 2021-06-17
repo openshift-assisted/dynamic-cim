@@ -57,6 +57,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
     </DropdownItem>,
   ];
 
+  // eslint-disable-next-line
   const onSelect: DropdownProps['onSelect'] = () => {};
 
   return (

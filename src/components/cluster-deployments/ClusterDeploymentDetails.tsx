@@ -15,29 +15,6 @@ import {
 import { AgentClusterInstallKind, AgentKind } from '../../kind';
 import { getAICluster } from '../ai-utils';
 
-type ClusterDeploymentDetailsProps = {
-  match: RMatch<{ name: string }>;
-  kind: K8sResourceKindReference;
-  name: string;
-  namespace: string;
-};
-
-const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => (
-  <DetailsPage
-    {...props}
-    menuActions={[]}
-    pages={[
-      {
-        href: '',
-        nameKey: 'Details',
-        component: ClusterDetail,
-      },
-    ]}
-  />
-);
-
-export default ClusterDeploymentDetails;
-
 type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
   agentClusterInstall: K8sResourceCommon;
 };
@@ -80,3 +57,26 @@ export const ClusterDetail = (props: DetailsTabProps) => {
     </div>
   );
 };
+
+type ClusterDeploymentDetailsProps = {
+  match: RMatch<{ name: string }>;
+  kind: K8sResourceKindReference;
+  name: string;
+  namespace: string;
+};
+
+const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => (
+  <DetailsPage
+    {...props}
+    menuActions={[]}
+    pages={[
+      {
+        href: '',
+        nameKey: 'Details',
+        component: ClusterDetail,
+      },
+    ]}
+  />
+);
+
+export default ClusterDeploymentDetails;

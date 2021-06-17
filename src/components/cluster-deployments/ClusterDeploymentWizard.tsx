@@ -41,11 +41,15 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     React.useState<AgentClusterInstallK8sResource>(queriedAgentClusterInstall);
 
   React.useEffect(() => {
-    setClusterDeployment(queriedClusterDeployment);
-  }, [clusterDeployment !== queriedClusterDeployment]);
+    if (clusterDeployment !== queriedClusterDeployment) {
+      setClusterDeployment(queriedClusterDeployment);
+    }
+  }, [clusterDeployment, queriedClusterDeployment]);
   React.useEffect(() => {
-    setAgentClusterInstall(queriedAgentClusterInstall);
-  }, [agentClusterInstall !== queriedAgentClusterInstall]);
+    if (agentClusterInstall !== queriedAgentClusterInstall) {
+      setAgentClusterInstall(queriedAgentClusterInstall);
+    }
+  }, [agentClusterInstall, queriedAgentClusterInstall]);
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
@@ -118,7 +122,14 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         throw `Failed to cretate the ClusterDeployment or gentClusterInstall resource: ${e.message}`;
       }
     },
-    [setClusterDeployment, setAgentClusterInstall, namespace],
+    [
+      setClusterDeployment,
+      setAgentClusterInstall,
+      namespace,
+      agentClusterInstallModel,
+      secretModel,
+      clusterDeploymentModel,
+    ],
   );
 
   const onClusterDetailsUpdate = React.useCallback(
@@ -163,7 +174,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         throw `Failed to patch the ClusterDeployment or AgentClusterInstall resource: ${e.message}`;
       }
     },
-    [],
+    [agentClusterInstall, clusterDeployment, agentClusterInstallModel, clusterDeploymentModel],
   );
 
   const onSaveDetails = React.useCallback(

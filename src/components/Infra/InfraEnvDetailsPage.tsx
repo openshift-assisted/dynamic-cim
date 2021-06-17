@@ -24,7 +24,7 @@ type InfraEnvDetailsProps = {
 
 const addHostAction =
   (open: ModalDialogsContextType['downloadIsoDialog']['open']): KebabAction =>
-  (kind: K8sKind, obj: InfraEnv, resources: {}) => {
+  (kind: K8sKind, obj: InfraEnv) => {
     const isoDownloadURL = obj?.status?.isoDownloadURL;
     return {
       label: 'Add Host',
@@ -36,7 +36,7 @@ const addHostAction =
 
 const addBmcAction =
   (open: ModalDialogsContextType['addBmcDialog']['open']): KebabAction =>
-  (kind: K8sKind, obj: InfraEnv, resources: {}) => {
+  () => {
     return {
       label: 'Add BMC',
       hidden: false,
