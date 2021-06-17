@@ -16,7 +16,7 @@
       ],
       "@openshift-console/dynamic-plugin-sdk/webpack": [
         "node_modules/@openshift-console/dynamic-plugin-sdk/lib/webpack"
-      ],
+      ]
     }
   },
   "include": ["src"]

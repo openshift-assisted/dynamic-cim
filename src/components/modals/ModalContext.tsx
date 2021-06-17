@@ -23,7 +23,7 @@ type EditHostModal = {
   inventory?: Inventory;
   usedHostnames: string[] | undefined;
   onSave: (values: HostUpdateParams) => Promise<any>;
-}
+};
 
 type ModalDialogsDataTypes = {
   downloadIsoDialog: DownloadIsoDialogProps;

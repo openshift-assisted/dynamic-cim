@@ -24,3 +24,24 @@ export const getBareMetalHostCredentialsSecret = (
 
   return credentialsSecret;
 };
+
+export const getPullSecretResource = ({
+  name,
+  namespace,
+  pullSecret,
+}: {
+  name: string;
+  namespace: string;
+  pullSecret: string;
+}) => ({
+  kind: 'Secret',
+  apiVersion: 'v1',
+  metadata: {
+    generateName: `pullsecret-${name}-`,
+    namespace,
+  },
+  data: {
+    '.dockerconfigjson': btoa(pullSecret),
+  },
+  type: 'kubernetes.io/dockerconfigjson',
+});

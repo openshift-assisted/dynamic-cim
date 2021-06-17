@@ -54,18 +54,23 @@ export const ClusterDetail = (props: DetailsTabProps) => {
       isList: false,
     });
 
-  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>({
-    kind: AgentKind,
-    isList: true,
-    selector: clusterDeployment.spec.platform.agentBareMetal.agentSelector,
-    namespaced: true,
-  });
+  const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
+  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>(
+    agentSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: agentSelector,
+          namespaced: true,
+        }
+      : undefined,
+  );
 
   if (agentsError) throw new Error(agentsError);
   if (agentClusterInstallError) throw new Error(agentClusterInstallError);
   if (!(agentsLoaded && agentClusterInstallLoaded)) return <LoadingState />;
 
-  const cluster = getAICluster(clusterDeployment, agentClusterInstall, agents);
+  const cluster = getAICluster({ clusterDeployment, agentClusterInstall, agents });
   return (
     <div className="co-m-pane__body">
       {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre>

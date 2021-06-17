@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { Dropdown, DropdownItem, DropdownProps, KebabToggle } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -10,6 +11,8 @@ import {
   RowProps,
   TableRow,
   TableData,
+  history,
+  ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
@@ -25,6 +28,7 @@ const columns: TableColumn<K8sResourceCommon>[] = [
   {
     title: 'Distribution version',
   },
+  // plus actions
 ];
 
 type ClusterDeploymentRowData = {
@@ -37,11 +41,24 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   index,
   style,
 }) => {
-  console.log('obj', obj);
+  const [isKebabOpen, setKebabOpen] = React.useState(false);
+
   const { clusterDeployment, agentClusterInstall } = obj;
   const {
     metadata: { uid, name, namespace },
   } = clusterDeployment;
+  const kebabActions = [
+    <DropdownItem
+      key="edit"
+      component="button"
+      onClick={() => history.push(`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`)}
+    >
+      Edit
+    </DropdownItem>,
+  ];
+
+  const onSelect: DropdownProps['onSelect'] = () => {};
+
   return (
     <TableRow id={uid} index={index} trKey={uid} style={style}>
       <TableData>
@@ -49,6 +66,17 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
       </TableData>
       <TableData>-</TableData>
       <TableData>{agentClusterInstall?.spec?.imageSetRef?.name}</TableData>
+      <TableData className="dropdown-kebab-pf pf-c-table__action">
+        <Dropdown
+          onSelect={onSelect}
+          toggle={
+            <KebabToggle onToggle={() => setKebabOpen(!isKebabOpen)} id={`kebab-toggle-${uid}`} />
+          }
+          isOpen={isKebabOpen}
+          isPlain
+          dropdownItems={kebabActions}
+        />
+      </TableData>
     </TableRow>
   );
 };
@@ -77,7 +105,9 @@ const ClusterDeploymentsListPage: React.FC = () => {
 
   return (
     <>
-      <ListPageHeader title="Clusters" />
+      <ListPageHeader title="Clusters">
+        {<ListPageCreate groupVersionKind={ClusterDeploymentKind}>Create Cluster</ListPageCreate>}
+      </ListPageHeader>
       <ListPageBody>
         <VirtualizedTable
           loaded={loaded && aciLoaded}
