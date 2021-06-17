@@ -4,9 +4,9 @@ import {
   ListPageHeader,
   ListPageBody,
   VirtualizedTable,
-  TableColumn, 
+  TableColumn,
   RowProps,
-  TableRow, 
+  TableRow,
   TableData,
   ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
@@ -33,10 +33,9 @@ const InfraRow: React.FC<RowProps<InfraEnv>> = ({ obj, index, style }) => (
 
 type InfraListPageProps = {
   namespace: string;
-}
+};
 
 const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
-
   const [infras, loaded, loadError] = useK8sWatchResource<InfraEnv[]>({
     kind: InfraEnvKind,
     isList: true,
@@ -46,7 +45,10 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
   return (
     <>
       <ListPageHeader title="Infrastructures">
-        <ListPageCreate groupVersionKind={InfraEnvKind} namespace={namespace || "assisted-installer"}>
+        <ListPageCreate
+          groupVersionKind={InfraEnvKind}
+          namespace={namespace || 'assisted-installer'}
+        >
           Create
         </ListPageCreate>
       </ListPageHeader>
