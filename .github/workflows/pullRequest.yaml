@@ -1,4 +1,4 @@
-name: Build on pull request to master or a feature branch
+name: Build on pull request to main or a feature branch
 
 on:
   pull_request:
@@ -13,11 +13,9 @@ jobs:
         run: echo "NODE_OPTIONS=--max-old-space-size=8192" >> $GITHUB_ENV
       - name: Check out code
         uses: actions/checkout@v2
-      - name: Install dependencies
-        uses: borales/actions-yarn@v2.0.0
+      - uses: actions/setup-node@v1
         with:
-          cmd: install
-      - name: lint code
-        uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: lint
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: yarn install
+      - run: yarn lint
