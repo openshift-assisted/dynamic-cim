@@ -112,7 +112,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ namespace }) => {
 
       return k8sCreate(infraModel, infraEnv);
     },
-    [infraModel],
+    [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
   );
   return (
     <div className="infra-env__form">
