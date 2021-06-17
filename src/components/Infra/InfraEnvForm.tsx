@@ -13,7 +13,7 @@ import { getClusterDeployment } from '../../k8s';
 
 import '../styles.scss';
 import './infra.scss';
-import { getAgentClusterInstall } from 'src/k8s/agentClusterInstall';
+import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 
 type InfraEnvWizardProps = {
   namespace: string;
