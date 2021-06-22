@@ -32,6 +32,9 @@ export type AgentClusterInstallK8sResource = K8sResourceCommon & {
         hostPrefix: number;
       }[];
       serviceNetwork?: string[];
+      machineNetwork?: {
+        cidr: string;
+      }[];
     };
   };
   status?: {

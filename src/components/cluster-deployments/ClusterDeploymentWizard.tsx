@@ -3,7 +3,9 @@ import { RouteComponentProps } from 'react-router';
 import {
   ClusterDeploymentWizard as AIClusterDeploymentWizard,
   ClusterDeploymentDetailsValues,
+  ClusterDeploymentNetworkingValues,
   Types,
+  LoadingState,
 } from 'openshift-assisted-ui-lib';
 import {
   useK8sWatchResource,
@@ -12,11 +14,23 @@ import {
   useK8sModel,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { AgentClusterInstallKind, ClusterDeploymentKind, ClusterImageSetKind } from '../../kind';
-import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
+import {
+  AgentClusterInstallKind,
+  AgentKind,
+  ClusterDeploymentKind,
+  ClusterImageSetKind,
+} from '../../kind';
+import {
+  AgentClusterInstallK8sResource,
+  AgentK8sResource,
+  ClusterDeploymentK8sResource,
+} from '../types';
+import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
+import EditHostModal from '../modals/EditHostModal';
 import { getAICluster } from '../ai-utils';
 import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
+import { onEditHostAction } from '../Agent/actions';
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -28,28 +42,15 @@ type ClusterDeploymentWizardProps = {
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
   namespace,
-  clusterDeployment: queriedClusterDeployment,
-  agentClusterInstall: queriedAgentClusterInstall,
+  clusterDeployment,
+  agentClusterInstall,
 }) => {
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
+  const [agentModel] = useK8sModel(AgentKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
 
-  const [clusterDeployment, setClusterDeployment] =
-    React.useState<ClusterDeploymentK8sResource>(queriedClusterDeployment);
-  const [agentClusterInstall, setAgentClusterInstall] =
-    React.useState<AgentClusterInstallK8sResource>(queriedAgentClusterInstall);
-
-  React.useEffect(() => {
-    if (clusterDeployment !== queriedClusterDeployment) {
-      setClusterDeployment(queriedClusterDeployment);
-    }
-  }, [clusterDeployment, queriedClusterDeployment]);
-  React.useEffect(() => {
-    if (agentClusterInstall !== queriedAgentClusterInstall) {
-      setAgentClusterInstall(queriedAgentClusterInstall);
-    }
-  }, [agentClusterInstall, queriedAgentClusterInstall]);
+  const { editHostModal } = useModalDialogsContext();
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
@@ -58,15 +59,17 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     namespaced: false,
     isList: true,
   });
-  const ocpVersions = (clusterImageSets || []).map(
-    (clusterImageSet, index): Types.OpenshiftVersionOptionType => {
-      return {
-        label: clusterImageSet.metadata.name,
-        value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
-        default: index === 0,
-        supportLevel: 'beta', // TODO(mlibra): Map from label "channel"
-      };
-    },
+  const ocpVersions = React.useMemo(
+    () =>
+      (clusterImageSets || []).map((clusterImageSet, index): Types.OpenshiftVersionOptionType => {
+        return {
+          label: clusterImageSet.metadata.name,
+          value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
+          default: index === 0,
+          supportLevel: 'beta', // TODO(mlibra): Map from label "channel"
+        };
+      }),
+    [clusterImageSets],
   );
 
   const [clusterDeployments] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
@@ -75,9 +78,25 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     namespaced: true,
     isList: true,
   });
-  const usedClusterNames = (clusterDeployments || [])
-    .filter((cd) => !clusterDeployment || clusterDeployment.metadata.uid !== cd.metadata.uid)
-    .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`);
+  const usedClusterNames = React.useMemo(
+    () =>
+      (clusterDeployments || [])
+        .filter((cd) => !clusterDeployment || clusterDeployment.metadata.uid !== cd.metadata.uid)
+        .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`),
+    [clusterDeployments, clusterDeployment],
+  );
+
+  const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
+  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>(
+    agentSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: agentSelector,
+          namespaced: true,
+        }
+      : undefined,
+  );
 
   const onClusterCreate = React.useCallback(
     async ({ pullSecret, openshiftVersion, ...params }: ClusterDeploymentDetailsValues) => {
@@ -94,27 +113,16 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           clusterDeploymentModel,
           getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
         );
-        setClusterDeployment(createdClusterDeployment);
 
-        const agentClusterInstall = await k8sCreate(
+        await k8sCreate(
           agentClusterInstallModel,
           getAgentClusterInstall({
             name,
             clusterDeploymentRefName: createdClusterDeployment.metadata.name,
             namespace,
             ocpVersion: openshiftVersion,
-            /* will be updated in a next step
-            controlPlaneAgents: 3, 
-            sshPublicKey: values.sshPublicKey,
-            clusterNetworkCidr: '10.128.0.0/14',
-            clusterNetworkHostPrefix: 23,
-            serviceNetwork: '172.30.0.0/16',
-            apiVip,
-            ingressVip,
-            */
           }),
         );
-        setAgentClusterInstall(agentClusterInstall);
 
         // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
       } catch (e) {
@@ -122,14 +130,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         throw `Failed to cretate the ClusterDeployment or gentClusterInstall resource: ${e.message}`;
       }
     },
-    [
-      setClusterDeployment,
-      setAgentClusterInstall,
-      namespace,
-      agentClusterInstallModel,
-      secretModel,
-      clusterDeploymentModel,
-    ],
+    [namespace, agentClusterInstallModel, secretModel, clusterDeploymentModel],
   );
 
   const onClusterDetailsUpdate = React.useCallback(
@@ -156,7 +157,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         );
         */
 
-        // TODO(mlibra): set values.openshiftVersion to agentClusterInstall?.spec?.imageSetRef?.name
         appendPatch(
           agentClusterInstallPatches,
           '/spec/imageSetRef/name',
@@ -189,26 +189,94 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [onClusterCreate, onClusterDetailsUpdate, clusterDeployment],
   );
 
+  const onSaveNetworking = React.useCallback(
+    async (values: ClusterDeploymentNetworkingValues) => {
+      try {
+        const agentClusterInstallPatches = [];
+
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/sshPublicKey',
+          values.sshPublicKey,
+          agentClusterInstall.spec.sshPublicKey,
+        );
+
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/networking/clusterNetwork',
+          [
+            {
+              cidr: values.clusterNetworkCidr,
+              hostPrefix: values.clusterNetworkHostPrefix,
+            },
+          ],
+          agentClusterInstall.spec?.networking?.clusterNetwork,
+        );
+
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/networking/serviceNetwork',
+          [values.serviceNetworkCidr],
+          agentClusterInstall.spec?.networking?.serviceNetwork,
+        );
+
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/apiVIP',
+          values.apiVip,
+          agentClusterInstall.spec?.apiVIP,
+        );
+
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/ingressVIP',
+          values.ingressVip,
+          agentClusterInstall.spec?.ingressVIP,
+        );
+
+        if (agentClusterInstallPatches.length > 0) {
+          await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
+        }
+      } catch (e) {
+        throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
+      }
+    },
+    [agentClusterInstall, agentClusterInstallModel],
+  );
+
   const onClose = () => {
     const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
     history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
   };
 
+  if (agentsError) throw new Error(agentsError);
+  if (!agentsLoaded) return <LoadingState />;
+
   const aiCluster = clusterDeployment
-    ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true })
+    ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true, agents })
     : undefined;
 
   return (
-    <AIClusterDeploymentWizard
-      className="cluster-deployment-wizard"
-      defaultPullSecret={defaultPullSecret}
-      ocpVersions={ocpVersions}
-      cluster={aiCluster}
-      usedClusterNames={usedClusterNames}
-      onClose={onClose}
-      onSaveDetails={onSaveDetails}
-    />
+    <>
+      <AIClusterDeploymentWizard
+        className="cluster-deployment-wizard"
+        defaultPullSecret={defaultPullSecret}
+        ocpVersions={ocpVersions}
+        cluster={aiCluster}
+        usedClusterNames={usedClusterNames}
+        onClose={onClose}
+        onSaveDetails={onSaveDetails}
+        onSaveNetworking={onSaveNetworking}
+        onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
+        canEditHost={() => true}
+      />
+      <EditHostModal />
+    </>
   );
 };
 
-export default ClusterDeploymentWizard;
+export default (props: ClusterDeploymentWizardProps) => (
+  <ModalDialogsContextProvider>
+    <ClusterDeploymentWizard {...props} />
+  </ModalDialogsContextProvider>
+);

@@ -18,7 +18,7 @@ type DownloadIsoDialogProps = {
 
 type AddBmcDialogProps = {};
 
-type EditHostModal = {
+export type EditHostModal = {
   host?: Host;
   inventory?: Inventory;
   usedHostnames: string[] | undefined;

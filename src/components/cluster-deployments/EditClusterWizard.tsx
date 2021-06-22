@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk/api';
+import { LoadingState } from 'openshift-assisted-ui-lib';
 import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import ClusterDeploymentWizard from './ClusterDeploymentWizard';
@@ -36,8 +37,7 @@ const EditClusterWizard: React.FC<RouteComponentProps<{ ns: string; name: string
   );
 
   if (!clusterDeploymentLoaded) {
-    // TODO(mlibra): render Loading state
-    return <div>Loading ...</div>;
+    return <LoadingState />;
   }
 
   if (clusterDeploymentError) {

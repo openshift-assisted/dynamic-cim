@@ -8,7 +8,11 @@ import {
   AgentClusterInstallStatusCondition,
   StatusCondition,
 } from './types';
-import { Cluster as AICluster, Host as AIHost } from 'openshift-assisted-ui-lib/dist/src/api';
+import {
+  Cluster as AICluster,
+  Host as AIHost,
+  Interface,
+} from 'openshift-assisted-ui-lib/dist/src/api';
 
 const conditionsByTypeReducer = (result, condition) => ({ ...result, [condition.type]: condition });
 
@@ -71,6 +75,28 @@ export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], stri
     return ['insufficient', ReadyForInstallation.message];
 };
 
+export const getHostNetworks = (
+  agents: AgentK8sResource[] = [],
+): { cidr: string; hostIds: string[] }[] => {
+  const cidrs: { [key in string]: string[] } = {};
+  agents.forEach((agent) => {
+    agent.status?.inventory?.interfaces?.forEach((interf: Interface) => {
+      // TODO(mlibra): re-enable TS after https://issues.redhat.com/browse/MGMT-7052
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
+      interf.ipV4Addresses?.forEach((addr: string) => {
+        cidrs[addr] = cidrs[addr] || [];
+        cidrs[addr].push(agent.metadata.uid);
+      });
+    });
+  });
+
+  return Object.keys(cidrs).map((cidr) => ({
+    cidr,
+    hostIds: cidrs[cidr],
+  }));
+};
+
 export const getAIHosts = (agents: AgentK8sResource[] = []) =>
   agents.map((agent): AIHost => {
     const [status, statusInfo] = getAgentStatus(agent);
@@ -78,7 +104,7 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       kind: 'Host',
       id: agent.metadata.uid,
       href: '',
-      status: status,
+      status,
       statusInfo: statusInfo,
       role: agent.spec.role,
       requestedHostname: agent.spec.hostname,
@@ -100,7 +126,7 @@ export const getAICluster = ({
   pullSecretSet?: boolean;
 }): AICluster => {
   const [status, statusInfo] = getClusterStatus(agentClusterInstall);
-  return {
+  const aiCluster: AICluster = {
     id: clusterDeployment.metadata.uid,
     kind: 'Cluster',
     href: '',
@@ -111,11 +137,24 @@ export const getAICluster = ({
     ingressVip: agentClusterInstall?.spec?.ingressVIP,
     status,
     statusInfo,
-    imageInfo: {},
+    imageInfo: {
+      sshPublicKey: agentClusterInstall?.spec?.sshPublicKey,
+    },
+    sshPublicKey: agentClusterInstall?.spec?.sshPublicKey,
+    clusterNetworkCidr: agentClusterInstall?.spec?.networking?.clusterNetwork?.[0]?.cidr,
+    clusterNetworkHostPrefix:
+      agentClusterInstall?.spec?.networking?.clusterNetwork?.[0]?.hostPrefix,
+    serviceNetworkCidr: agentClusterInstall?.spec?.networking?.serviceNetwork?.[0],
+    machineNetworkCidr: agentClusterInstall?.spec?.networking?.machineNetwork?.[0]?.cidr,
     monitoredOperators: [],
-    hosts: getAIHosts(agents),
     pullSecretSet,
+    vipDhcpAllocation: false,
+    userManagedNetworking: false,
+    hostNetworks: getHostNetworks(agents),
+    totalHostCount: agents?.length,
+    hosts: getAIHosts(agents),
   };
+  return aiCluster;
 };
 
 export const getClusterValidatedCondition = (resource: AgentClusterInstallK8sResource) =>

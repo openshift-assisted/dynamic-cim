@@ -13,8 +13,8 @@ export type AgentClusterInstallParams = {
   clusterNetworkHostPrefix?: number;
   serviceNetwork?: string;
 
-  apiVip?: string;
-  ingressVip?: string;
+  apiVIP?: string;
+  ingressVIP?: string;
 };
 
 export const getAgentClusterInstall = ({
@@ -27,8 +27,8 @@ export const getAgentClusterInstall = ({
   clusterNetworkCidr,
   clusterNetworkHostPrefix,
   serviceNetwork,
-  apiVip,
-  ingressVip,
+  apiVIP,
+  ingressVIP,
 }: AgentClusterInstallParams): AgentClusterInstallK8sResource => {
   const obj: AgentClusterInstallK8sResource = {
     apiVersion: 'extensions.hive.openshift.io/v1beta1',
@@ -41,8 +41,8 @@ export const getAgentClusterInstall = ({
       clusterDeploymentRef: {
         name: clusterDeploymentRefName,
       },
-      apiVIP: apiVip,
-      ingressVIP: ingressVip,
+      apiVIP,
+      ingressVIP,
       networking: {},
       provisionRequirements: {
         controlPlaneAgents,

@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { K8sPatch } from '../components/types';
 
 // strValues: array of 'key=value' items
@@ -13,10 +14,10 @@ export const parseStringLabels = (strValues) => {
 export const appendPatch = (
   patches: K8sPatch,
   path: string,
-  newVal: string,
-  existingVal?: string,
+  newVal: object | string,
+  existingVal?: object | string,
 ) => {
-  if (newVal !== existingVal) {
+  if (!_.isEqual(newVal, existingVal)) {
     patches.push({
       op: existingVal ? 'replace' : 'add',
       path,
