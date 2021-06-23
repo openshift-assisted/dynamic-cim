@@ -86,7 +86,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [clusterDeployments, clusterDeployment],
   );
 
-  const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
+  const agentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>(
     agentSelector
       ? {

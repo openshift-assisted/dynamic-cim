@@ -49,6 +49,9 @@ export const getClusterStatus = (
     return ['insufficient', RequirementsMet.message];
   if (Completed.status === 'False' && Completed.reason === 'UnapprovedAgents')
     return ['insufficient', Completed.message];
+
+  console.error('Unhandled conditions to cluster status mapping: ', conditionsByType);
+  return ['insufficient', undefined];
 };
 
 export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], string] => {
