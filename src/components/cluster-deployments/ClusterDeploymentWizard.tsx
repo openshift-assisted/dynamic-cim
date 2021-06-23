@@ -282,7 +282,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
   };
 
-  if (queriedClusterDeploymentName && !clusterDeployment) {
+  /* The ocpVersions is needed for initialValues of the Details step.
+     In case of the Edit flow (when queriedClusterDeploymentName is set), let's calculate initialValues just once.
+   */
+  if (!ocpVersions.length || (queriedClusterDeploymentName && !clusterDeployment)) {
     return <LoadingState />;
   }
 
