@@ -35,15 +35,13 @@ import { onEditHostAction } from '../Agent/actions';
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
   namespace?: string;
-  clusterDeployment?: ClusterDeploymentK8sResource;
-  agentClusterInstall?: AgentClusterInstallK8sResource;
+  queriedClusterDeploymentName?: string;
 };
 
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
   namespace,
-  clusterDeployment,
-  agentClusterInstall,
+  queriedClusterDeploymentName,
 }) => {
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
@@ -51,6 +49,38 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const [secretModel] = useK8sModel('core~v1~Secret');
 
   const { editHostModal } = useModalDialogsContext();
+  const [clusterDeploymentName, setClusterDeploymentName] = React.useState<string>();
+  React.useEffect(
+    () => setClusterDeploymentName(queriedClusterDeploymentName),
+    [queriedClusterDeploymentName],
+  );
+
+  const [clusterDeployment, , clusterDeploymentError] =
+    useK8sWatchResource<ClusterDeploymentK8sResource>(
+      clusterDeploymentName
+        ? {
+            kind: ClusterDeploymentKind,
+            name: clusterDeploymentName,
+            namespace,
+            namespaced: true,
+            isList: false,
+          }
+        : undefined,
+    );
+
+  // it is ok if missing
+  const clusterInstallRefName = clusterDeployment?.spec?.clusterInstallRef?.name;
+  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>(
+    clusterInstallRefName
+      ? {
+          kind: AgentClusterInstallKind,
+          name: clusterInstallRefName,
+          namespace,
+          namespaced: true,
+          isList: false,
+        }
+      : undefined,
+  );
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
@@ -81,13 +111,13 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const usedClusterNames = React.useMemo(
     () =>
       (clusterDeployments || [])
-        .filter((cd) => !clusterDeployment || clusterDeployment.metadata.uid !== cd.metadata.uid)
+        .filter((cd) => clusterDeployment?.metadata?.uid !== cd.metadata.uid)
         .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`),
     [clusterDeployments, clusterDeployment],
   );
 
   const agentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
-  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>(
+  const [agents, , agentsError] = useK8sWatchResource<AgentK8sResource[]>(
     agentSelector
       ? {
           kind: AgentKind,
@@ -113,6 +143,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           clusterDeploymentModel,
           getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
         );
+
+        // keep watching the newly created resource from now on
+        setClusterDeploymentName(createdClusterDeployment.metadata.name);
 
         await k8sCreate(
           agentClusterInstallModel,
@@ -179,14 +212,14 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   const onSaveDetails = React.useCallback(
     async (values: ClusterDeploymentDetailsValues) => {
-      if (clusterDeployment) {
+      if (clusterDeploymentName) {
         // we have already either queried (the Edit flow) or created it
         await onClusterDetailsUpdate(values);
       } else {
         await onClusterCreate(values);
       }
     },
-    [onClusterCreate, onClusterDetailsUpdate, clusterDeployment],
+    [onClusterCreate, onClusterDetailsUpdate, clusterDeploymentName],
   );
 
   const onSaveNetworking = React.useCallback(
@@ -249,13 +282,20 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
   };
 
-  if (agentsError) throw new Error(agentsError);
-  if (!agentsLoaded) return <LoadingState />;
+  if (queriedClusterDeploymentName && !clusterDeployment) {
+    return <LoadingState />;
+  }
+
+  if (clusterDeploymentError || agentsError) {
+    // TODO(mlibra): Render error state
+    throw new Error(agentsError);
+  }
 
   const aiCluster = clusterDeployment
     ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true, agents })
     : undefined;
 
+  // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
   return (
     <>
       <AIClusterDeploymentWizard

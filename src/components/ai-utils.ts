@@ -19,12 +19,17 @@ const conditionsByTypeReducer = (result, condition) => ({ ...result, [condition.
 export const getClusterStatus = (
   agentClusterInstall: AgentClusterInstallK8sResource,
 ): [AICluster['status'], string] => {
-  const conditions = agentClusterInstall.status.conditions;
+  const conditions = agentClusterInstall?.status?.conditions || [];
+
   const conditionsByType: {
     [key in AgentClusterInstallStatusConditionType]?: AgentClusterInstallStatusCondition;
   } = conditions.reduce(conditionsByTypeReducer, {});
 
   const { Validated, RequirementsMet, Completed, Stopped } = conditionsByType;
+
+  if (!Validated || !RequirementsMet || !Completed || !Stopped) {
+    return ['insufficient', 'AgentClusterInstall conditions are missing.'];
+  }
 
   if (Stopped.status === 'True' && Stopped.reason === 'InstallationCancelled')
     return ['cancelled', Stopped.message];
@@ -51,7 +56,7 @@ export const getClusterStatus = (
     return ['insufficient', Completed.message];
 
   console.error('Unhandled conditions to cluster status mapping: ', conditionsByType);
-  return ['insufficient', undefined];
+  return ['insufficient', 'Unexpected AgentClusterInstall conditions.'];
 };
 
 export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], string] => {
@@ -129,12 +134,13 @@ export const getAICluster = ({
   pullSecretSet?: boolean;
 }): AICluster => {
   const [status, statusInfo] = getClusterStatus(agentClusterInstall);
+  console.log('---- getAICluster, clusterDeployment: ', clusterDeployment);
   const aiCluster: AICluster = {
-    id: clusterDeployment.metadata.uid,
+    id: clusterDeployment.metadata?.uid || '',
     kind: 'Cluster',
     href: '',
-    name: clusterDeployment.spec.clusterName,
-    baseDnsDomain: clusterDeployment.spec.baseDomain,
+    name: clusterDeployment.spec?.clusterName,
+    baseDnsDomain: clusterDeployment.spec?.baseDomain,
     openshiftVersion: agentClusterInstall?.spec?.imageSetRef?.name,
     apiVip: agentClusterInstall?.spec?.apiVIP,
     ingressVip: agentClusterInstall?.spec?.ingressVIP,
