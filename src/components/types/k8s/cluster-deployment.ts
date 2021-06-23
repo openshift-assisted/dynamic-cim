@@ -19,4 +19,10 @@ export type ClusterDeploymentK8sResource = K8sResourceCommon & {
       };
     };
   };
+  status?: {
+    installVersion?: string;
+    installedTimestamp?: string;
+    installStartedTimestamp?: string;
+    webConsoleUrl?: string;
+  };
 };
