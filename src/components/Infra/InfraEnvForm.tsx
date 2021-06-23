@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { match as RMatch } from 'react-router-dom';
 import { InfraEnvForm } from 'openshift-assisted-ui-lib';
 import {
   useK8sModel,
@@ -16,10 +17,11 @@ import './infra.scss';
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 
 type InfraEnvWizardProps = {
-  namespace: string;
+  match: RMatch<{ ns: string }>;
 };
 
-const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ namespace }) => {
+const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
+  const namespace = match.params.ns;
   const [infraModel] = useK8sModel(InfraEnvKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
@@ -67,7 +69,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ namespace }) => {
           name: values.name,
           clusterDeploymentRefName: clusterDeployment.metadata.name,
           namespace,
-          ocpVersion: 'openshift-v4.7.0',
+          ocpVersion: 'openshift-v4.8.0',
           controlPlaneAgents: 3,
           sshPublicKey: values.sshPublicKey,
           clusterNetworkCidr: '10.128.0.0/14',
