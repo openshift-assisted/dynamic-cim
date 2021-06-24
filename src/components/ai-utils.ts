@@ -132,7 +132,6 @@ export const getHostNetworks = (
 export const getAIHosts = (agents: AgentK8sResource[] = []) =>
   agents.map((agent): AIHost => {
     const [status, statusInfo] = getAgentStatus(agent);
-
     // TODO(mlibra) Remove that workaround once https://issues.redhat.com/browse/MGMT-7052 is fixed
     const inventory: Inventory = _.cloneDeep(agent.status?.inventory || {});
     inventory.interfaces?.forEach((intf) => {
@@ -141,6 +140,12 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       intf.ipv4Addresses = _.cloneDeep(intf.ipV4Addresses);
     });
 
+    const {
+      currentStage = 'Starting installation',
+      progressInfo,
+      stageStartTime,
+      stageUpdateTime,
+    } = agent.status?.progress || {};
     return {
       kind: 'Host',
       id: agent.metadata.uid,
@@ -153,6 +158,24 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       createdAt: agent.metadata.creationTimestamp,
       validationsInfo: JSON.stringify({ hardware: [] }),
       inventory: JSON.stringify(inventory),
+      progress: {
+        currentStage,
+        progressInfo,
+        stageStartedAt: stageStartTime,
+        stageUpdatedAt: stageUpdateTime,
+      },
+      progressStages: [
+        'Starting installation',
+        'Waiting for control plane',
+        'Start waiting for control plane',
+        'Installing',
+        'Writing image to disk',
+        'Rebooting',
+        'Waiting for ignition',
+        'Configuring',
+        'Joined',
+        'Done',
+      ],
     };
   });
 
@@ -195,6 +218,8 @@ export const getAICluster = ({
     hostNetworks: getHostNetworks(agents, agentClusterInstall),
     totalHostCount: agents?.length,
     hosts: getAIHosts(agents),
+    installStartedAt: clusterDeployment.status.installStartedTimestamp,
+    installCompletedAt: clusterDeployment.status.installedTimestamp,
   };
 
   return aiCluster;

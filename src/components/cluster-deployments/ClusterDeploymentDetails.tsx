@@ -65,6 +65,7 @@ const columns = [
 export const ClusterDetail = (props: DetailsTabProps) => {
   const { obj: clusterDeployment } = props;
   const [progressCardExpanded, setProgressCardExpanded] = React.useState(true);
+  const [inventoryCardExpanded, setInventoryCardExpanded] = React.useState(true);
   const [detailsCardExpanded, setDetailsCardExpanded] = React.useState(true);
 
   const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallError] =
@@ -99,33 +100,56 @@ export const ClusterDetail = (props: DetailsTabProps) => {
       <pre style={{ fontSize: 10 }}>{JSON.stringify(agentClusterInstall, null, 2)}</pre>
       <pre style={{ fontSize: 10 }}>{JSON.stringify(agents, null, 2)}</pre> */}
       <Stack hasGutter>
+        {[
+          'preparing-for-installation',
+          'installing',
+          'installing-pending-user-action',
+          'finalizing',
+          'installed',
+          'error',
+          'cancelled',
+        ].includes(cluster.status) && (
+          <StackItem>
+            <Card id="cluster-installation-progress-card" isExpanded={progressCardExpanded}>
+              <CardHeader
+                onExpand={() => setProgressCardExpanded(!progressCardExpanded)}
+                toggleButtonProps={{
+                  id: 'progress-card-toggle-button',
+                  'aria-label': 'Cluster installation process',
+                  'aria-labelledby': 'titleId progress-card-toggle-button',
+                  'aria-expanded': progressCardExpanded,
+                }}
+              >
+                <CardTitle id="titleId">Cluster installation process</CardTitle>
+              </CardHeader>
+              <CardExpandableContent>
+                <CardBody>
+                  <ClusterProgress cluster={cluster} />
+                </CardBody>
+              </CardExpandableContent>
+            </Card>
+          </StackItem>
+        )}
         <StackItem>
-          <Card id="cluster-installation-progress-card" isExpanded={progressCardExpanded}>
+          <Card id="cluster-inventory-card" isExpanded={inventoryCardExpanded}>
             <CardHeader
-              onExpand={() => setProgressCardExpanded(!progressCardExpanded)}
+              onExpand={() => setInventoryCardExpanded(!inventoryCardExpanded)}
               toggleButtonProps={{
-                id: 'progress-card-toggle-button',
-                'aria-label': 'Cluster installation process',
-                'aria-labelledby': 'titleId progress-card-toggle-button',
-                'aria-expanded': progressCardExpanded,
+                id: 'inventory-card-toggle-button',
+                'aria-label': 'Hosts inventory',
+                'aria-labelledby': 'titleId inventory-card-toggle-button',
+                'aria-expanded': inventoryCardExpanded,
               }}
             >
-              <CardTitle id="titleId">Cluster installation process</CardTitle>
+              <CardTitle id="titleId">Hosts inventory</CardTitle>
             </CardHeader>
             <CardExpandableContent>
               <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <ClusterProgress cluster={cluster} />
-                  </StackItem>
-                  <StackItem>
-                    <HostsTable
-                      hosts={cluster.hosts}
-                      EmptyState={() => <div>empty</div>}
-                      columns={columns}
-                    />
-                  </StackItem>
-                </Stack>
+                <HostsTable
+                  hosts={cluster.hosts}
+                  EmptyState={() => <div>empty</div>}
+                  columns={columns}
+                />
               </CardBody>
             </CardExpandableContent>
           </Card>
