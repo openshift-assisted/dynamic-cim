@@ -30,7 +30,7 @@ import EditHostModal from '../modals/EditHostModal';
 import { getAICluster } from '../ai-utils';
 import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
-import { onEditHostAction } from '../Agent/actions';
+import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -311,7 +311,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
         onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
+        onEditRole={onEditRoleAction(agentModel, agents)}
         canEditHost={() => true}
+        canEditRole={() => true}
       />
       <EditHostModal />
     </>
