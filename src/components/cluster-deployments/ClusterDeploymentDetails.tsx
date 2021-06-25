@@ -12,6 +12,8 @@ import {
 import { sortable, expandable } from '@patternfly/react-table';
 import {
   DetailsPage,
+  K8sKind,
+  KebabOptionsCreator,
   PageComponentProps,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
@@ -27,12 +29,25 @@ import {
   AgentK8sResource,
   ClusterDeploymentK8sResource,
 } from '../types';
-import { AgentClusterInstallKind, AgentKind } from '../../kind';
+import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { getAICluster, getClusterValidatedCondition } from '../ai-utils';
 import ValidatedConditionAlert from './ValidatedConditionAlert';
 
 type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
   agentClusterInstall: K8sResourceCommon;
+};
+
+export const getClusterDeploymentActions: KebabOptionsCreator = (
+  kindObj: K8sKind,
+  data: K8sResourceCommon,
+) => {
+  const { namespace, name } = data.metadata;
+  return [
+    {
+      label: 'Edit',
+      href: `/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`,
+    },
+  ];
 };
 
 const columns = [
@@ -166,7 +181,7 @@ type ClusterDeploymentDetailsProps = {
 const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => (
   <DetailsPage
     {...props}
-    menuActions={[]}
+    menuActions={getClusterDeploymentActions}
     pages={[
       {
         href: '',

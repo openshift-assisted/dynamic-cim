@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { Dropdown, DropdownItem, DropdownProps, KebabToggle } from '@patternfly/react-core';
+import { Dropdown, DropdownProps, KebabToggle, DropdownItem } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -11,8 +11,8 @@ import {
   RowProps,
   TableRow,
   TableData,
-  history,
   ListPageCreate,
+  history,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
