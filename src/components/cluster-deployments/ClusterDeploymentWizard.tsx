@@ -253,6 +253,15 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           agentClusterInstall.spec?.networking?.serviceNetwork,
         );
 
+        const hostSubnet = values.hostSubnet?.split(' ')?.[0];
+        const machineNetworkValue = hostSubnet ? [{ cidr: hostSubnet }] : [];
+        appendPatch(
+          agentClusterInstallPatches,
+          '/spec/networking/machineNetwork',
+          machineNetworkValue,
+          agentClusterInstall.spec?.networking?.machineNetwork,
+        );
+
         appendPatch(
           agentClusterInstallPatches,
           '/spec/apiVIP',

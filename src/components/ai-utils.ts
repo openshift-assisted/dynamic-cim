@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import {
   AgentK8sResource,
   ClusterDeploymentK8sResource,
@@ -11,7 +12,7 @@ import {
 import {
   Cluster as AICluster,
   Host as AIHost,
-  Interface,
+  Inventory,
 } from 'openshift-assisted-ui-lib/dist/src/api';
 
 const conditionsByTypeReducer = (result, condition) => ({ ...result, [condition.type]: condition });
@@ -84,30 +85,48 @@ export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], stri
 };
 
 export const getHostNetworks = (
-  agents: AgentK8sResource[] = [],
-): { cidr: string; hostIds: string[] }[] => {
-  const cidrs: { [key in string]: string[] } = {};
-  agents.forEach((agent) => {
-    agent.status?.inventory?.interfaces?.forEach((interf: Interface) => {
-      // TODO(mlibra): re-enable TS after https://issues.redhat.com/browse/MGMT-7052
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      // @ts-ignore
-      interf.ipV4Addresses?.forEach((addr: string) => {
-        cidrs[addr] = cidrs[addr] || [];
-        cidrs[addr].push(agent.metadata.uid);
-      });
-    });
-  });
+  agents: AgentK8sResource[],
+  agentClusterInstall?: AgentClusterInstallK8sResource,
+) => {
+  if (!agents?.length || !agentClusterInstall?.status?.connectivityMajorityGroups) {
+    return [];
+  }
 
-  return Object.keys(cidrs).map((cidr) => ({
-    cidr,
-    hostIds: cidrs[cidr],
-  }));
+  const connectivityMajorityGroups = JSON.parse(
+    agentClusterInstall.status.connectivityMajorityGroups,
+  );
+
+  // Format: '{"192.168.122.0/24":["4ae8f799-7d60-4d13-be7b-f9c93ddec28e","c891ff23-9b0d-4b8e-be05-c9bcc145e823","cd188ad8-8290-4e7f-a86f-b85fef0e63aa"]}'
+  return Object.keys(connectivityMajorityGroups).map((cidr) => {
+    const hostIds: string[] = [];
+    connectivityMajorityGroups[cidr].forEach((hostName: string) => {
+      const agent: AgentK8sResource = agents.find((agent) => agent.metadata.name === hostName);
+      if (!agent) {
+        console.warn(`Can not find agent of ${hostName} name.`);
+      } else {
+        hostIds.push(agent.metadata.uid);
+      }
+    });
+
+    return {
+      cidr,
+      hostIds,
+    };
+  });
 };
 
 export const getAIHosts = (agents: AgentK8sResource[] = []) =>
   agents.map((agent): AIHost => {
     const [status, statusInfo] = getAgentStatus(agent);
+
+    // TODO(mlibra) Remove that workaround once https://issues.redhat.com/browse/MGMT-7052 is fixed
+    const inventory: Inventory = _.cloneDeep(agent.status.inventory);
+    inventory.interfaces?.forEach((intf) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
+      intf.ipv4Addresses = _.cloneDeep(intf.ipV4Addresses);
+    });
+
     return {
       kind: 'Host',
       id: agent.metadata.uid,
@@ -118,7 +137,7 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       requestedHostname: agent.spec.hostname,
       // validationsInfo: JSON.stringify(agent.status.hostValidationInfo),
       validationsInfo: JSON.stringify({ hardware: [] }),
-      inventory: JSON.stringify(agent.status.inventory),
+      inventory: JSON.stringify(inventory),
     };
   });
 
@@ -134,7 +153,6 @@ export const getAICluster = ({
   pullSecretSet?: boolean;
 }): AICluster => {
   const [status, statusInfo] = getClusterStatus(agentClusterInstall);
-  console.log('---- getAICluster, clusterDeployment: ', clusterDeployment);
   const aiCluster: AICluster = {
     id: clusterDeployment.metadata?.uid || '',
     kind: 'Cluster',
@@ -150,19 +168,20 @@ export const getAICluster = ({
       sshPublicKey: agentClusterInstall?.spec?.sshPublicKey,
     },
     sshPublicKey: agentClusterInstall?.spec?.sshPublicKey,
-    clusterNetworkCidr: agentClusterInstall?.spec?.networking?.clusterNetwork?.[0]?.cidr,
     clusterNetworkHostPrefix:
       agentClusterInstall?.spec?.networking?.clusterNetwork?.[0]?.hostPrefix,
+    clusterNetworkCidr: agentClusterInstall?.spec?.networking?.clusterNetwork?.[0]?.cidr,
     serviceNetworkCidr: agentClusterInstall?.spec?.networking?.serviceNetwork?.[0],
     machineNetworkCidr: agentClusterInstall?.spec?.networking?.machineNetwork?.[0]?.cidr,
     monitoredOperators: [],
     pullSecretSet,
     vipDhcpAllocation: false,
     userManagedNetworking: false,
-    hostNetworks: getHostNetworks(agents),
+    hostNetworks: getHostNetworks(agents, agentClusterInstall),
     totalHostCount: agents?.length,
     hosts: getAIHosts(agents),
   };
+
   return aiCluster;
 };
 
