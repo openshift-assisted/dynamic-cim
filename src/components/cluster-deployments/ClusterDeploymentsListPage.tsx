@@ -97,12 +97,14 @@ const ClusterDeploymentsListPage: React.FC = () => {
     namespaced: true,
   });
 
-  const data = clusterDeployments.map((cd) => ({
-    clusterDeployment: cd,
-    agentClusterInstall: agentClusterInstalls.find(
-      (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
-    ),
-  }));
+  const data = clusterDeployments
+    .sort((cdA, cdB) => cdA.metadata.name.localeCompare(cdB.metadata.name))
+    .map((cd) => ({
+      clusterDeployment: cd,
+      agentClusterInstall: agentClusterInstalls.find(
+        (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
+      ),
+    }));
 
   return (
     <>
