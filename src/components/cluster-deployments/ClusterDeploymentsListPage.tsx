@@ -4,6 +4,7 @@ import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { Dropdown, DropdownProps, KebabToggle, DropdownItem } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
+  k8sKill,
   ListPageHeader,
   ListPageBody,
   VirtualizedTable,
@@ -13,6 +14,7 @@ import {
   TableData,
   ListPageCreate,
   history,
+  useK8sModel,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
@@ -42,6 +44,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   style,
 }) => {
   const [isKebabOpen, setKebabOpen] = React.useState(false);
+  const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
 
   const { clusterDeployment, agentClusterInstall } = obj;
   const {
@@ -55,10 +58,22 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
     >
       Edit
     </DropdownItem>,
+    <DropdownItem
+      key="delete"
+      component="button"
+      onClick={() => {
+        // Do not ask, the user knows what is he doing
+        k8sKill(clusterDeploymentModel, clusterDeployment);
+      }}
+    >
+      Delete
+    </DropdownItem>,
   ];
 
   // eslint-disable-next-line
-  const onSelect: DropdownProps['onSelect'] = () => {};
+  const onSelect: DropdownProps['onSelect'] = () => {
+    setKebabOpen(false);
+  };
 
   return (
     <TableRow id={uid} index={index} trKey={uid} style={style}>
