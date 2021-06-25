@@ -288,7 +288,11 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   const onClose = () => {
     const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
-    history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
+    // List page
+    // history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
+
+    // Details page
+    history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata.name}`);
   };
 
   /* The ocpVersions is needed for initialValues of the Details step.
