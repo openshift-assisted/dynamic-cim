@@ -19,6 +19,7 @@ import {
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
+import { canEditCluster } from './utils';
 
 const columns: TableColumn<K8sResourceCommon>[] = [
   {
@@ -55,6 +56,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
       key="edit"
       component="button"
       onClick={() => history.push(`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`)}
+      isDisabled={!canEditCluster(agentClusterInstall)}
     >
       Edit
     </DropdownItem>,
