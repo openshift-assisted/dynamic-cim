@@ -253,14 +253,17 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           agentClusterInstall.spec?.networking?.serviceNetwork,
         );
 
-        const hostSubnet = values.hostSubnet?.split(' ')?.[0];
-        const machineNetworkValue = hostSubnet ? [{ cidr: hostSubnet }] : [];
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/networking/machineNetwork',
-          machineNetworkValue,
-          agentClusterInstall.spec?.networking?.machineNetwork,
-        );
+        // Setting Machine network CIDR is forbidden when cluster is not in vip-dhcp-allocation mode (which is not soppurted ATM anyway)
+        if (values.vipDhcpAllocation) {
+          const hostSubnet = values.hostSubnet?.split(' ')?.[0];
+          const machineNetworkValue = hostSubnet ? [{ cidr: hostSubnet }] : [];
+          appendPatch(
+            agentClusterInstallPatches,
+            '/spec/networking/machineNetwork',
+            machineNetworkValue,
+            agentClusterInstall.spec?.networking?.machineNetwork,
+          );
+        }
 
         appendPatch(
           agentClusterInstallPatches,

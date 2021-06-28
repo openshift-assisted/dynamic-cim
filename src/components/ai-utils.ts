@@ -134,7 +134,7 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       status,
       statusInfo: statusInfo,
       role: agent.spec.role,
-      requestedHostname: agent.spec.hostname,
+      requestedHostname: agent.spec.hostname || inventory.hostname,
       // validationsInfo: JSON.stringify(agent.status.hostValidationInfo),
       validationsInfo: JSON.stringify({ hardware: [] }),
       inventory: JSON.stringify(inventory),
