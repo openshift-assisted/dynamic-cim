@@ -34,7 +34,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const [hosts, loaded] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: AgentKind,
     isList: true,
-    selector: obj.spec.agentLabelSelector,
+    selector: obj.status.agentLabelSelector,
   });
 
   /* TODO(mlibra)

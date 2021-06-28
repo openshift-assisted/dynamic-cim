@@ -89,9 +89,6 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
           },
         },
         spec: {
-          agentLabelSelector: {
-            matchLabels: labels,
-          },
           agentLabels: labels,
           clusterRef: {
             name: values.name,
@@ -101,6 +98,11 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
             name: values.name,
           },
           sshAuthorizedKey: values.sshPublicKey,
+        },
+        status: {
+          agentLabelSelector: {
+            matchLabels: labels,
+          },
         },
       };
 
