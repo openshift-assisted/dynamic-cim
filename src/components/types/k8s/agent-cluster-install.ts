@@ -1,4 +1,5 @@
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { Cluster } from 'openshift-assisted-ui-lib/dist/src/api/types';
 import { StatusCondition } from './common';
 
 export type AgentClusterInstallStatusConditionType =
@@ -40,5 +41,11 @@ export type AgentClusterInstallK8sResource = K8sResourceCommon & {
   status?: {
     connectivityMajorityGroups?: string;
     conditions: AgentClusterInstallStatusCondition[];
+    debugInfo?: {
+      eventsUrl: string;
+      logsUrl: string;
+      state: Cluster['status'];
+      stateInfo: Cluster['statusInfo'];
+    };
   };
 };

@@ -310,9 +310,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     throw new Error(agentsError);
   }
 
-  const aiCluster = clusterDeployment
-    ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true, agents })
-    : undefined;
+  const aiCluster =
+    clusterDeployment && agentClusterInstall
+      ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true, agents })
+      : undefined;
 
   // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
   return (

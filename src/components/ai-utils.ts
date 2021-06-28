@@ -17,7 +17,7 @@ import {
 
 const conditionsByTypeReducer = (result, condition) => ({ ...result, [condition.type]: condition });
 
-export const getClusterStatus = (
+export const getClusterStatusFromConditions = (
   agentClusterInstall: AgentClusterInstallK8sResource,
 ): [AICluster['status'], string] => {
   const conditions = agentClusterInstall?.status?.conditions || [];
@@ -60,7 +60,16 @@ export const getClusterStatus = (
   return ['insufficient', 'Unexpected AgentClusterInstall conditions.'];
 };
 
-export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], string] => {
+export const getClusterStatus = (
+  agentClusterInstall: AgentClusterInstallK8sResource,
+): [AICluster['status'], AICluster['statusInfo']] => {
+  const { state: status, stateInfo: statusInfo } = agentClusterInstall.status?.debugInfo || {};
+  return [status, statusInfo];
+};
+
+export const getAgentStatusFromConditions = (
+  agent: AgentK8sResource,
+): [AIHost['status'], string] => {
   const conditions = agent.status.conditions;
 
   const conditionsByType: { [key in AgentStatusConditionType]?: AgentStatusCondition } =
@@ -82,6 +91,11 @@ export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], stri
     return ['pending-for-input', ReadyForInstallation.message];
   if (ReadyForInstallation.status === 'False' && ReadyForInstallation.reason === 'AgentNotReady')
     return ['insufficient', ReadyForInstallation.message];
+};
+
+const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => {
+  const { state: status, stateInfo: statusInfo } = agent.status?.debugInfo;
+  return [status, statusInfo];
 };
 
 export const getHostNetworks = (
@@ -132,10 +146,11 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       id: agent.metadata.uid,
       href: '',
       status,
-      statusInfo: statusInfo,
+      statusInfo,
       role: agent.spec.role,
       requestedHostname: agent.spec.hostname || inventory.hostname,
       // validationsInfo: JSON.stringify(agent.status.hostValidationInfo),
+      createdAt: agent.metadata.creationTimestamp,
       validationsInfo: JSON.stringify({ hardware: [] }),
       inventory: JSON.stringify(inventory),
     };
