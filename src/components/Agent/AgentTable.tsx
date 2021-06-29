@@ -1,10 +1,6 @@
 import * as React from 'react';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import {
-  useK8sWatchResource,
-  k8sPatch,
-  useK8sModel,
-} from '@openshift-console/dynamic-plugin-sdk/api';
+import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
 import { HostsTable, Api, LoadingState } from 'openshift-assisted-ui-lib';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
@@ -13,6 +9,7 @@ import { AgentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { InfraEnv } from '../types';
+import { onEditHostAction, onEditRoleAction } from './actions';
 
 import './agenttable.scss';
 
@@ -40,7 +37,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
     selector: obj.spec.agentLabelSelector,
   });
 
-  /*
+  /* TODO(mlibra)
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: 'metal3.io~v1alpha1~BareMetalHost',
     isList: true,
@@ -101,39 +98,9 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
               EmptyState={() => <div>no hosts</div>}
               columns={getColumns()}
               canEditHost={() => true}
-              onEditHost={(host, inventory) =>
-                editHostModal.open({
-                  host,
-                  inventory,
-                  usedHostnames: [],
-                  onSave: async ({ hostname, hostId }) => {
-                    const host = hosts.find((h) => h.metadata.uid === hostId);
-                    await k8sPatch(agentModel, host, [
-                      {
-                        op: 'add',
-                        path: `/spec/hostname`,
-                        value: hostname,
-                      },
-                      {
-                        op: 'replace',
-                        path: `/spec/approved`,
-                        value: true,
-                      },
-                    ]);
-                  },
-                })
-              }
+              onEditHost={onEditHostAction(editHostModal, agentModel, hosts)}
               canEditRole={() => true}
-              onEditRole={async (host, role) => {
-                const agent = hosts.find((h) => h.metadata.uid === host.id);
-                await k8sPatch(agentModel, agent, [
-                  {
-                    op: 'replace',
-                    path: `/spec/role`,
-                    value: role,
-                  },
-                ]);
-              }}
+              onEditRole={onEditRoleAction(agentModel, hosts)}
             />
           ) : (
             <LoadingState />

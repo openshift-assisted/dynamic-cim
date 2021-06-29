@@ -1,9 +1,10 @@
 import * as React from 'react';
 
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { Dropdown, DropdownItem, DropdownProps, KebabToggle } from '@patternfly/react-core';
+import { Dropdown, DropdownProps, KebabToggle, DropdownItem } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
+  k8sKill,
   ListPageHeader,
   ListPageBody,
   VirtualizedTable,
@@ -11,12 +12,14 @@ import {
   RowProps,
   TableRow,
   TableData,
-  history,
   ListPageCreate,
+  history,
+  useK8sModel,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { Link } from 'react-router-dom';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
+import { canEditCluster } from './utils';
 
 const columns: TableColumn<K8sResourceCommon>[] = [
   {
@@ -42,6 +45,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   style,
 }) => {
   const [isKebabOpen, setKebabOpen] = React.useState(false);
+  const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
 
   const { clusterDeployment, agentClusterInstall } = obj;
   const {
@@ -52,13 +56,26 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
       key="edit"
       component="button"
       onClick={() => history.push(`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`)}
+      isDisabled={!canEditCluster(agentClusterInstall)}
     >
       Edit
+    </DropdownItem>,
+    <DropdownItem
+      key="delete"
+      component="button"
+      onClick={() => {
+        // Do not ask, the user knows what is he doing
+        k8sKill(clusterDeploymentModel, clusterDeployment);
+      }}
+    >
+      Delete
     </DropdownItem>,
   ];
 
   // eslint-disable-next-line
-  const onSelect: DropdownProps['onSelect'] = () => {};
+  const onSelect: DropdownProps['onSelect'] = () => {
+    setKebabOpen(false);
+  };
 
   return (
     <TableRow id={uid} index={index} trKey={uid} style={style}>
@@ -97,12 +114,14 @@ const ClusterDeploymentsListPage: React.FC = () => {
     namespaced: true,
   });
 
-  const data = clusterDeployments.map((cd) => ({
-    clusterDeployment: cd,
-    agentClusterInstall: agentClusterInstalls.find(
-      (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
-    ),
-  }));
+  const data = clusterDeployments
+    .sort((cdA, cdB) => cdA.metadata.name.localeCompare(cdB.metadata.name))
+    .map((cd) => ({
+      clusterDeployment: cd,
+      agentClusterInstall: agentClusterInstalls.find(
+        (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
+      ),
+    }));
 
   return (
     <>

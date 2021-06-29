@@ -9,5 +9,5 @@ export type StatusCondition<ConditionType> = {
 export type K8sPatch = {
   op: 'replace' | 'add';
   path: string;
-  value: string;
+  value: object | string;
 }[];

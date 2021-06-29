@@ -12,6 +12,8 @@ import {
 import { sortable, expandable } from '@patternfly/react-table';
 import {
   DetailsPage,
+  K8sKind,
+  KebabOptionsCreator,
   PageComponentProps,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
@@ -27,13 +29,27 @@ import {
   AgentK8sResource,
   ClusterDeploymentK8sResource,
 } from '../types';
-import { AgentClusterInstallKind, AgentKind } from '../../kind';
+import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { getAICluster, getClusterValidatedCondition } from '../ai-utils';
 import ValidatedConditionAlert from './ValidatedConditionAlert';
+import { canEditCluster } from './utils';
 
 type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
   agentClusterInstall: K8sResourceCommon;
 };
+
+const getClusterDeploymentActions =
+  (agentClusterInstall?: AgentClusterInstallK8sResource): KebabOptionsCreator =>
+  (kindObj: K8sKind, clusterDeployment: K8sResourceCommon) => {
+    const { namespace, name } = clusterDeployment.metadata;
+    return [
+      {
+        label: 'Edit',
+        href: `/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`,
+        isDisabled: !canEditCluster(agentClusterInstall),
+      },
+    ];
+  };
 
 const columns = [
   { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
@@ -163,18 +179,28 @@ type ClusterDeploymentDetailsProps = {
   namespace: string;
 };
 
-const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => (
-  <DetailsPage
-    {...props}
-    menuActions={[]}
-    pages={[
-      {
-        href: '',
-        nameKey: 'Overview',
-        component: ClusterDetail,
-      },
-    ]}
-  />
-);
+const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => {
+  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>({
+    kind: AgentClusterInstallKind,
+    name: props.name,
+    namespace: props.namespace,
+    namespaced: true,
+    isList: false,
+  });
+
+  return (
+    <DetailsPage
+      {...props}
+      menuActions={getClusterDeploymentActions(agentClusterInstall)}
+      pages={[
+        {
+          href: '',
+          nameKey: 'Overview',
+          component: ClusterDetail,
+        },
+      ]}
+    />
+  );
+};
 
 export default ClusterDeploymentDetails;
