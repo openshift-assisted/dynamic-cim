@@ -41,8 +41,8 @@ export const getAgentClusterInstall = ({
       clusterDeploymentRef: {
         name: clusterDeploymentRefName,
       },
-      apiVip,
-      ingressVip,
+      apiVIP: apiVip,
+      ingressVIP: ingressVip,
       networking: {},
       provisionRequirements: {
         controlPlaneAgents,

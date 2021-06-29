@@ -17,8 +17,8 @@ export type AgentClusterInstallK8sResource = K8sResourceCommon & {
     clusterDeploymentRef: {
       name: string;
     };
-    apiVip?: string;
-    ingressVip?: string;
+    apiVIP?: string;
+    ingressVIP?: string;
     sshPublicKey?: string;
     imageSetRef?: {
       name?: string;
