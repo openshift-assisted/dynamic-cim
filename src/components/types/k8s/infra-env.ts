@@ -2,7 +2,6 @@ import { K8sResourceCommon, Selector } from '@openshift-console/dynamic-plugin-s
 
 export type InfraEnv = K8sResourceCommon & {
   spec?: {
-    agentLabelSelector?: Selector;
     agentLabels?: string[];
     clusterRef?: {
       name: string;
@@ -19,6 +18,7 @@ export type InfraEnv = K8sResourceCommon & {
     };
   };
   status?: {
+    agentLabelSelector?: Selector;
     conditions?: any[];
     isoDownloadURL?: string;
   };
