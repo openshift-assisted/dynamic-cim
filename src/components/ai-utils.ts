@@ -93,10 +93,10 @@ export const getAgentStatusFromConditions = (
     return ['insufficient', ReadyForInstallation.message];
 };
 
-const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => {
-  const { state: status, stateInfo: statusInfo } = agent.status?.debugInfo;
-  return [status, statusInfo];
-};
+const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => [
+  agent.status?.debugInfo?.state,
+  agent.status?.debugInfo?.stateInfo,
+];
 
 export const getHostNetworks = (
   agents: AgentK8sResource[],
