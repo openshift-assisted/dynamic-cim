@@ -17,7 +17,7 @@ import {
 
 const conditionsByTypeReducer = (result, condition) => ({ ...result, [condition.type]: condition });
 
-export const getClusterStatus = (
+export const getClusterStatusFromConditions = (
   agentClusterInstall: AgentClusterInstallK8sResource,
 ): [AICluster['status'], string] => {
   const conditions = agentClusterInstall?.status?.conditions || [];
@@ -60,7 +60,16 @@ export const getClusterStatus = (
   return ['insufficient', 'Unexpected AgentClusterInstall conditions.'];
 };
 
-export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], string] => {
+export const getClusterStatus = (
+  agentClusterInstall: AgentClusterInstallK8sResource,
+): [AICluster['status'], AICluster['statusInfo']] => {
+  const { state: status, stateInfo: statusInfo } = agentClusterInstall.status?.debugInfo || {};
+  return [status, statusInfo];
+};
+
+export const getAgentStatusFromConditions = (
+  agent: AgentK8sResource,
+): [AIHost['status'], string] => {
   const conditions = agent.status.conditions;
 
   const conditionsByType: { [key in AgentStatusConditionType]?: AgentStatusCondition } =
@@ -83,6 +92,11 @@ export const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], stri
   if (ReadyForInstallation.status === 'False' && ReadyForInstallation.reason === 'AgentNotReady')
     return ['insufficient', ReadyForInstallation.message];
 };
+
+const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => [
+  agent.status?.debugInfo?.state,
+  agent.status?.debugInfo?.stateInfo,
+];
 
 export const getHostNetworks = (
   agents: AgentK8sResource[],
@@ -120,22 +134,29 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
     const [status, statusInfo] = getAgentStatus(agent);
 
     // TODO(mlibra) Remove that workaround once https://issues.redhat.com/browse/MGMT-7052 is fixed
-    const inventory: Inventory = _.cloneDeep(agent.status.inventory);
+    const inventory: Inventory = _.cloneDeep(agent.status?.inventory || {});
     inventory.interfaces?.forEach((intf) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       intf.ipv4Addresses = _.cloneDeep(intf.ipV4Addresses);
     });
 
+    const {
+      currentStage = 'Starting installation',
+      progressInfo,
+      stageStartTime,
+      stageUpdateTime,
+    } = agent.status?.progress || {};
     return {
       kind: 'Host',
       id: agent.metadata.uid,
       href: '',
       status,
-      statusInfo: statusInfo,
+      statusInfo,
       role: agent.spec.role,
       requestedHostname: agent.spec.hostname || inventory.hostname,
       // validationsInfo: JSON.stringify(agent.status.hostValidationInfo),
+      createdAt: agent.metadata.creationTimestamp,
       validationsInfo: JSON.stringify({ hardware: [] }),
       inventory: JSON.stringify(inventory),
     };

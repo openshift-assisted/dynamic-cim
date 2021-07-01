@@ -1,5 +1,5 @@
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
-import { HostRole, Inventory } from 'openshift-assisted-ui-lib/dist/src/api/types';
+import { Host, HostRole, HostStage, Inventory } from 'openshift-assisted-ui-lib/dist/src/api/types';
 import { ValidationsInfo } from 'openshift-assisted-ui-lib/dist/src/types/hosts';
 import { StatusCondition } from './common';
 
@@ -26,5 +26,16 @@ export type AgentK8sResource = K8sResourceCommon & {
     conditions: AgentStatusCondition[];
     hostValidationInfo: ValidationsInfo;
     inventory: Inventory;
+    progress: {
+      currentStage: HostStage;
+      progressInfo: string;
+      stageStartTime: string;
+      stageUpdateTime: string;
+    };
+    debugInfo: {
+      eventsUrl: string;
+      state: Host['status'];
+      stateInfo: Host['statusInfo'];
+    };
   };
 };

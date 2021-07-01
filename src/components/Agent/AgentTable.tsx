@@ -1,17 +1,16 @@
 import * as React from 'react';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import { HostsTable, Api, LoadingState } from 'openshift-assisted-ui-lib';
+import { HostsTable, LoadingState } from 'openshift-assisted-ui-lib';
 import { Stack, StackItem } from '@patternfly/react-core';
 import { sortable, expandable } from '@patternfly/react-table';
-
 import { AgentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
-import { InfraEnv } from '../types';
 import { onEditHostAction, onEditRoleAction } from './actions';
+import { AgentK8sResource, InfraEnv } from '../types';
 
 import './agenttable.scss';
+import { getAIHosts } from '../ai-utils';
 
 const getColumns = () => [
   { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
@@ -31,7 +30,7 @@ type AgentTableProps = {
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();
   const [agentModel] = useK8sModel(AgentKind);
-  const [hosts, loaded] = useK8sWatchResource<K8sResourceCommon[]>({
+  const [agents, loaded] = useK8sWatchResource<AgentK8sResource[]>({
     kind: AgentKind,
     isList: true,
     selector: obj.status.agentLabelSelector,
@@ -44,20 +43,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   });
   */
 
-  const restHosts = hosts.map((h: any) => {
-    const restHost: Api.Host = {
-      id: h.metadata.uid,
-      href: '',
-      kind: 'Host',
-      status: 'known',
-      statusInfo: 'foo',
-      inventory: JSON.stringify(h.status.inventory),
-      requestedHostname: h.spec.hostname,
-      role: h.spec.role,
-      createdAt: h.metadata.creationTimestamp,
-    };
-    return restHost;
-  });
+  const restHosts = getAIHosts(agents);
 
   // TODO(mlibra): filter-out BMHs which have already Agents
   /*
@@ -98,9 +84,9 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
               EmptyState={() => <div>no hosts</div>}
               columns={getColumns()}
               canEditHost={() => true}
-              onEditHost={onEditHostAction(editHostModal, agentModel, hosts)}
+              onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
               canEditRole={() => true}
-              onEditRole={onEditRoleAction(agentModel, hosts)}
+              onEditRole={onEditRoleAction(agentModel, agents)}
             />
           ) : (
             <LoadingState />
