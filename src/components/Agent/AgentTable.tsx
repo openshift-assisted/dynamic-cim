@@ -82,6 +82,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
           canEditRole={() => true}
           onEditRole={onEditRoleAction(agentModel, agents)}
+          className="agents-table"
         />
       ) : (
         <LoadingState />

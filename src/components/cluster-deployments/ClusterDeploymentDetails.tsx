@@ -149,6 +149,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                   hosts={cluster.hosts}
                   EmptyState={() => <div>empty</div>}
                   columns={columns}
+                  className="agents-table"
                 />
               </CardBody>
             </CardExpandableContent>
