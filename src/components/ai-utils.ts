@@ -167,7 +167,6 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       progressStages: [
         'Starting installation',
         'Waiting for control plane',
-        'Start waiting for control plane',
         'Installing',
         'Writing image to disk',
         'Rebooting',
