@@ -93,10 +93,10 @@ export const getAgentStatusFromConditions = (
     return ['insufficient', ReadyForInstallation.message];
 };
 
-const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => {
-  const { state: status, stateInfo: statusInfo } = agent.status?.debugInfo;
-  return [status, statusInfo];
-};
+const getAgentStatus = (agent: AgentK8sResource): [AIHost['status'], AIHost['statusInfo']] => [
+  agent.status?.debugInfo?.state,
+  agent.status?.debugInfo?.stateInfo,
+];
 
 export const getHostNetworks = (
   agents: AgentK8sResource[],
@@ -134,13 +134,19 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
     const [status, statusInfo] = getAgentStatus(agent);
 
     // TODO(mlibra) Remove that workaround once https://issues.redhat.com/browse/MGMT-7052 is fixed
-    const inventory: Inventory = _.cloneDeep(agent.status.inventory);
+    const inventory: Inventory = _.cloneDeep(agent.status?.inventory || {});
     inventory.interfaces?.forEach((intf) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       intf.ipv4Addresses = _.cloneDeep(intf.ipV4Addresses);
     });
 
+    const {
+      currentStage = 'Starting installation',
+      progressInfo,
+      stageStartTime,
+      stageUpdateTime,
+    } = agent.status?.progress || {};
     return {
       kind: 'Host',
       id: agent.metadata.uid,
