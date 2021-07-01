@@ -119,7 +119,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
     [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
   );
   return (
-    <div className="infra-env__form">
+    <div className="co-m-pane__body">
       <InfraEnvForm
         usedNames={usedNames}
         onSubmit={onSubmit}

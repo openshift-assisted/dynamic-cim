@@ -1,0 +1,11 @@
+.pf-c-table.hosts-table {
+  table-layout: auto;
+  .pf-c-table__action {
+    width: unset !important;
+  }
+  &.pf-m-compact {
+    tr > td {
+      vertical-align: unset;
+    }
+  }
+}

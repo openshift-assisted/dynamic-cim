@@ -13,7 +13,7 @@ const InfraDetailsTab: React.FC<InfraDetailsTabProps> = ({ obj }) => {
     (k) => `${k}=${obj.status.agentLabelSelector.matchLabels[k]}`,
   );
   return (
-    <div className="infra-env__details">
+    <div className="co-m-pane__body">
       <EnvironmentDetails
         title="Environment details"
         name={obj.metadata.name}
