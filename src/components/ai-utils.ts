@@ -141,12 +141,6 @@ export const getAIHosts = (agents: AgentK8sResource[] = []) =>
       intf.ipv4Addresses = _.cloneDeep(intf.ipV4Addresses);
     });
 
-    const {
-      currentStage = 'Starting installation',
-      progressInfo,
-      stageStartTime,
-      stageUpdateTime,
-    } = agent.status?.progress || {};
     return {
       kind: 'Host',
       id: agent.metadata.uid,
