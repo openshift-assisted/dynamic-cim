@@ -292,7 +292,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   return (
     <>
       <AIClusterDeploymentWizard
-        className="cluster-deployment-wizard"
+        className="cluster-deployment-wizard agent-table"
         defaultPullSecret={defaultPullSecret}
         clusterImages={clusterImageSets}
         clusterDeployment={clusterDeployment}
