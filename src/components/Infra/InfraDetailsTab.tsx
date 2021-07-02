@@ -9,7 +9,7 @@ type InfraDetailsTabProps = {
 };
 
 const InfraDetailsTab: React.FC<InfraDetailsTabProps> = ({ obj }) => {
-  const labels = Object.keys(obj.status?.agentLabelSelector?.matchLabels).map(
+  const labels = Object.keys(obj.status?.agentLabelSelector?.matchLabels || {}).map(
     (k) => `${k}=${obj.status.agentLabelSelector.matchLabels[k]}`,
   );
   return (
