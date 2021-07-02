@@ -21,18 +21,19 @@ const getColumns = () => [
 ];
 
 type AgentTableProps = {
-  obj: CIM.InfraEnv;
+  obj: CIM.AgentK8sResource;
 };
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();
   const [agentModel] = useK8sModel(AgentKind);
+  const selector = obj.status?.agentLabelSelector;
   const [agents, loaded] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    obj.status?.agentLabelSelector
+    selector
       ? {
           kind: AgentKind,
           isList: true,
-          selector: obj.status.agentLabelSelector,
+          selector,
         }
       : undefined,
   );

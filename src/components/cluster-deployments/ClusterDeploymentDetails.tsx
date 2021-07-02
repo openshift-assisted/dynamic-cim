@@ -41,7 +41,7 @@ type DetailsTabProps = React.PropsWithChildren<
 const getClusterDeploymentActions =
   (agentClusterInstall?: CIM.AgentClusterInstallK8sResource): KebabOptionsCreator =>
   (kindObj: K8sKind, clusterDeployment: K8sResourceCommon) => {
-    const { namespace, name } = clusterDeployment.metadata;
+    const { namespace, name } = clusterDeployment.metadata || {};
     return [
       {
         label: 'Edit',
@@ -69,13 +69,17 @@ export const ClusterDetail = (props: DetailsTabProps) => {
   const [detailsCardExpanded, setDetailsCardExpanded] = React.useState(true);
 
   const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallError] =
-    useK8sWatchResource<CIM.AgentClusterInstallK8sResource>({
-      kind: AgentClusterInstallKind,
-      name: clusterDeployment.spec.clusterInstallRef.name,
-      namespace: clusterDeployment.metadata.namespace,
-      namespaced: true,
-      isList: false,
-    });
+    useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
+      clusterDeployment?.spec?.clusterInstallRef.name
+        ? {
+            kind: AgentClusterInstallKind,
+            name: clusterDeployment?.spec?.clusterInstallRef.name,
+            namespace: clusterDeployment?.metadata?.namespace,
+            namespaced: true,
+            isList: false,
+          }
+        : undefined,
+    );
 
   const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, agentsLoaded, agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
@@ -89,6 +93,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
       : undefined,
   );
 
+  if (!clusterDeployment) return null;
   if (agentsError) throw new Error(agentsError);
   if (agentClusterInstallError) throw new Error(agentClusterInstallError);
   if (!(agentsLoaded && agentClusterInstallLoaded)) return <LoadingState />;
@@ -178,14 +183,14 @@ export const ClusterDetail = (props: DetailsTabProps) => {
               <CardBody>
                 {console.log('status.webConsoleUrl', clusterDeployment.status?.webConsoleUrl)}
                 <ClusterPropertiesList
-                  name={clusterDeployment.metadata.name}
-                  id={clusterDeployment.metadata.uid}
-                  openshiftVersion={agentClusterInstall.spec?.imageSetRef?.name}
-                  baseDnsDomain={clusterDeployment.spec.baseDomain}
-                  apiVip={agentClusterInstall.spec?.apiVIP}
-                  ingressVip={agentClusterInstall.spec?.ingressVIP}
+                  name={clusterDeployment.metadata?.name}
+                  id={clusterDeployment.metadata?.uid}
+                  openshiftVersion={agentClusterInstall?.spec?.imageSetRef?.name}
+                  baseDnsDomain={clusterDeployment.spec?.baseDomain}
+                  apiVip={agentClusterInstall?.spec?.apiVIP}
+                  ingressVip={agentClusterInstall?.spec?.ingressVIP}
                   clusterNetworkCidr={
-                    agentClusterInstall.spec?.networking?.clusterNetwork?.[0]?.cidr
+                    agentClusterInstall.spec?.networking?.clusterNetwork?.[0].cidr
                   }
                   clusterNetworkHostPrefix={
                     agentClusterInstall.spec?.networking?.clusterNetwork?.[0]?.hostPrefix

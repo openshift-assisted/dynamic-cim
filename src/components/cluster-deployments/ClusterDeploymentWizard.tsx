@@ -24,7 +24,7 @@ const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
-  namespace?: string;
+  namespace: string;
   queriedClusterDeploymentName?: string;
 };
 
@@ -89,8 +89,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const usedClusterNames = React.useMemo(
     () =>
       (clusterDeployments || [])
-        .filter((cd) => clusterDeployment?.metadata?.uid !== cd.metadata.uid)
-        .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`),
+        .filter((cd) => clusterDeployment?.metadata?.uid !== cd.metadata?.uid)
+        .map((cd): string => `${cd.metadata?.name}.${cd.spec?.baseDomain}`),
     [clusterDeployments, clusterDeployment],
   );
 
@@ -172,7 +172,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           agentClusterInstallPatches,
           '/spec/imageSetRef/name',
           values.openshiftVersion,
-          agentClusterInstall.spec.imageSetRef?.name,
+          agentClusterInstall.spec?.imageSetRef?.name,
         );
 
         if (clusterDeploymentPatches.length > 0) {
@@ -209,7 +209,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           agentClusterInstallPatches,
           '/spec/sshPublicKey',
           values.sshPublicKey,
-          agentClusterInstall.spec.sshPublicKey,
+          agentClusterInstall.spec?.sshPublicKey,
         );
 
         appendPatch(
@@ -273,7 +273,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     // history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
 
     // Details page
-    history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata.name}`);
+    history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata?.name}`);
   };
 
   /* The ocpVersions is needed for initialValues of the Details step.

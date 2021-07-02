@@ -50,9 +50,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
 
   const { clusterDeployment, agentClusterInstall } = obj;
-  const {
-    metadata: { uid, name, namespace },
-  } = clusterDeployment;
+  const { uid = '', name, namespace } = clusterDeployment?.metadata || {};
   const kebabActions = [
     <DropdownItem
       key="edit"
@@ -117,11 +115,15 @@ const ClusterDeploymentsListPage: React.FC = () => {
   });
 
   const data = clusterDeployments
-    .sort((cdA, cdB) => cdA.metadata.name.localeCompare(cdB.metadata.name))
+    .sort((cdA, cdB) => {
+      let cmpr = cdA.metadata?.name?.localeCompare(cdB.metadata?.name || '');
+      cmpr = cmpr === undefined ? -1 : cmpr;
+      return cmpr;
+    })
     .map((cd) => ({
       clusterDeployment: cd,
       agentClusterInstall: agentClusterInstalls.find(
-        (aci) => aci.metadata.name === cd.spec.clusterInstallRef.name,
+        (aci) => aci.metadata?.name === cd.spec?.clusterInstallRef.name,
       ),
     }));
 
@@ -135,6 +137,8 @@ const ClusterDeploymentsListPage: React.FC = () => {
           loaded={loaded && aciLoaded}
           loadError={error || aciError}
           data={data}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
           Row={ClusterDeploymentRow}
           columns={columns}
         />
