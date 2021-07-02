@@ -2,7 +2,7 @@ export type ClusterDeploymentParams = {
   name: string;
   namespace: string;
   baseDnsDomain: string;
-  labels: string;
+  labels?: string;
   pullSecretName: string;
 };
 

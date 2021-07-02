@@ -25,12 +25,12 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
-  const [infraEnvs] = useK8sWatchResource<CIM.InfraEnv[]>({
+  const [infraEnvs] = useK8sWatchResource<CIM.InfraEnvK8sResource[]>({
     kind: InfraEnvKind,
     namespace,
     isList: true,
   });
-  const usedNames = infraEnvs.map((env) => env.metadata.name);
+  const usedNames = infraEnvs.map((env) => env.metadata?.name).filter(Boolean) as string[];
   const onSubmit = React.useCallback(
     async (values) => {
       const secret = await k8sCreate(secretModel, getSecret(namespace, values));

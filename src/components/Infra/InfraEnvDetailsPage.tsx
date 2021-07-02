@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
 import { DetailsPage, K8sKind } from '@openshift-console/dynamic-plugin-sdk/api';
+import { CIM } from 'openshift-assisted-ui-lib/';
 import AgentTable from '../Agent/AgentTable';
-import { InfraEnv, KebabAction } from 'openshift-assisted-ui-lib/dist/src/cim';
 import {
   ModalDialogsContextProvider,
   useModalDialogsContext,
@@ -22,19 +22,22 @@ type InfraEnvDetailsProps = {
 };
 
 const addHostAction =
-  (open: ModalDialogsContextType['downloadIsoDialog']['open']): KebabAction =>
-  (kind: K8sKind, obj: InfraEnv) => {
+  (open: ModalDialogsContextType['downloadIsoDialog']['open']): CIM.KebabAction =>
+  (kind: K8sKind, obj: CIM.InfraEnvK8sResource) => {
     const isoDownloadURL = obj?.status?.isoDownloadURL;
     return {
       label: 'Add Host',
       hidden: !isoDownloadURL,
       callback: () =>
-        open({ fileName: `discovery_image_${obj.metadata.name}.iso`, downloadUrl: isoDownloadURL }),
+        open({
+          fileName: `discovery_image_${obj.metadata?.name}.iso`,
+          downloadUrl: isoDownloadURL || '',
+        }),
     };
   };
 
 const addBmcAction =
-  (open: ModalDialogsContextType['addBmcDialog']['open']): KebabAction =>
+  (open: ModalDialogsContextType['addBmcDialog']['open']): CIM.KebabAction =>
   () => {
     return {
       label: 'Add BMC',
@@ -59,6 +62,8 @@ const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...r
           {
             href: '',
             nameKey: 'Details',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+            // @ts-ignore
             component: InfraDetailsTab,
           },
           {

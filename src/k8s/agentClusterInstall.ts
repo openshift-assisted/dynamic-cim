@@ -54,11 +54,11 @@ export const getAgentClusterInstall = ({
   };
 
   if (sshPublicKey) {
-    obj.spec.sshPublicKey = sshPublicKey;
+    obj.spec['sshPublicKey'] = sshPublicKey;
   }
 
   if (clusterNetworkCidr && clusterNetworkHostPrefix) {
-    obj.spec.networking.clusterNetwork = [
+    obj.spec.networking['clusterNetwork'] = [
       {
         cidr: clusterNetworkCidr, // '10.128.0.0/14',
         hostPrefix: clusterNetworkHostPrefix, // 23,
@@ -68,7 +68,7 @@ export const getAgentClusterInstall = ({
 
   if (serviceNetwork) {
     obj.spec.networking = obj.spec.networking || {};
-    obj.spec.networking.serviceNetwork = [serviceNetwork];
+    obj.spec.networking['serviceNetwork'] = [serviceNetwork];
   }
 
   return obj;

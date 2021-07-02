@@ -11,21 +11,21 @@ import {
   TableData,
   ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
+import { CIM } from 'openshift-assisted-ui-lib';
 
 import { InfraEnvKind } from '../../kind';
 
-const columns: TableColumn<InfraEnv>[] = [
+const columns: TableColumn<CIM.InfraEnvK8sResource>[] = [
   {
     title: 'Name',
   },
 ];
 
-const InfraRow: React.FC<RowProps<InfraEnv>> = ({ obj, index, style }) => (
-  <TableRow id={obj.metadata.uid} index={index} trKey={obj.metadata.uid} style={style}>
+const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, index, style }) => (
+  <TableRow id={obj.metadata?.uid} index={index} trKey={obj.metadata?.uid || ''} style={style}>
     <TableData>
-      <Link to={`/k8s/ns/${obj.metadata.namespace}/${InfraEnvKind}/${obj.metadata.name}`}>
-        {obj.metadata.name}
+      <Link to={`/k8s/ns/${obj.metadata?.namespace}/${InfraEnvKind}/${obj.metadata?.name}`}>
+        {obj.metadata?.name}
       </Link>
     </TableData>
   </TableRow>
@@ -36,7 +36,7 @@ type InfraListPageProps = {
 };
 
 const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
-  const [infras, loaded, loadError] = useK8sWatchResource<InfraEnv[]>({
+  const [infras, loaded, loadError] = useK8sWatchResource<CIM.InfraEnvK8sResource[]>({
     kind: InfraEnvKind,
     isList: true,
     namespace,
@@ -57,6 +57,8 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
           loaded={loaded}
           loadError={loadError}
           data={infras}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
           Row={InfraRow}
           columns={columns}
         />

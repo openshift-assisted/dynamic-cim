@@ -14,14 +14,14 @@ export const parseStringLabels = (strValues) => {
 export const appendPatch = (
   patches: K8sPatch,
   path: string,
-  newVal: object | string,
+  newVal: object | string | undefined,
   existingVal?: object | string,
 ) => {
   if (!_.isEqual(newVal, existingVal)) {
     patches.push({
       op: existingVal ? 'replace' : 'add',
       path,
-      value: newVal,
+      value: newVal || '',
     });
   }
 };

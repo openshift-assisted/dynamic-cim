@@ -33,7 +33,7 @@ export type ModalDialogsContextType = {
     isOpen: boolean;
     open: (data: ModalDialogsDataTypes[key]) => void;
     onClose: () => void;
-    data?: ModalDialogsDataTypes[key];
+    data: ModalDialogsDataTypes[key];
   };
 };
 
