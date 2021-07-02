@@ -27,11 +27,15 @@ type AgentTableProps = {
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();
   const [agentModel] = useK8sModel(AgentKind);
-  const [agents, loaded] = useK8sWatchResource<AgentK8sResource[]>({
-    kind: AgentKind,
-    isList: true,
-    selector: obj.status.agentLabelSelector,
-  });
+  const [agents, loaded] = useK8sWatchResource<AgentK8sResource[]>(
+    obj.status?.agentLabelSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: obj.status.agentLabelSelector,
+        }
+      : undefined,
+  );
 
   /* TODO(mlibra)
   const [baremetalhosts] = useK8sWatchResource<K8sResourceCommon[]>({
