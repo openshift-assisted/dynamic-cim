@@ -1311,7 +1311,7 @@ class-utils@^0.3.5:
     isobject "^3.0.0"
     static-extend "^0.1.1"
 
-classnames@2.x:
+classnames@2.x, classnames@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/classnames/-/classnames-2.3.1.tgz#dfcfa3891e306ec1dad105d0e88f4417b8535e8e"
   integrity sha512-OlQdbZ7gLfGarSqxesMesDa5uz7KFbID8Kpq/SxIoNGDqY8lSYs0D+hhtBXhcdB3rcbXArFr7vlHheLk1voeNA==
@@ -4612,12 +4612,13 @@ opener@^1.5.1:
   resolved "https://registry.yarnpkg.com/opener/-/opener-1.5.1.tgz#6d2f0e77f1a0af0032aca716c2c1fbb8e7e8abed"
   integrity sha512-goYSy5c2UXE4Ra1xixabeVh1guIX/ZV/YokJksb6q2lubWu6UbvPQ20p542/sFIll1nl8JnCyK9oBaOcCWXwvA==
 
-openshift-assisted-ui-lib@^1.5.23:
-  version "1.5.23"
-  resolved "https://registry.yarnpkg.com/openshift-assisted-ui-lib/-/openshift-assisted-ui-lib-1.5.23.tgz#6fdf93464e501a6b8ce14e32334401783a2e5205"
-  integrity sha512-upCZ5RyB/DA2TYyD8/51BTBNojSyJw5ocjwjN4fwKTGxL0zxvFvwTmVm72s+cdDL0JoBr6sr+1ro7yU6eK3okw==
+openshift-assisted-ui-lib@^1.5.26:
+  version "1.5.26"
+  resolved "https://registry.yarnpkg.com/openshift-assisted-ui-lib/-/openshift-assisted-ui-lib-1.5.26.tgz#9b5456af47a338818e95466600fcef871abf5c29"
+  integrity sha512-/arBGbKQliNtZXXLRnGv+fwkY4cJUqREbwGslidd1UYyi6VS1sxSjDnbnQdkGqYB36c2dxOd/iepYADYQFBCrg==
   dependencies:
     axios-case-converter "^0.6.0"
+    classnames "^2.3.1"
     file-saver "^2.0.2"
     filesize.js "^2.0.0"
     formik "2.2.6"
