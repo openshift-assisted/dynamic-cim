@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, AlertVariant } from '@patternfly/react-core';
-import { StatusCondition } from '../types';
+import { StatusCondition } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 type ValidationAlertProps = {
   condition: StatusCondition<'Validated'>;

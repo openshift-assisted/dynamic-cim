@@ -28,7 +28,7 @@ import {
   AgentClusterInstallK8sResource,
   AgentK8sResource,
   ClusterDeploymentK8sResource,
-} from '../types';
+} from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { getAICluster, getClusterValidatedCondition } from '../ai-utils';
 import ValidatedConditionAlert from './ValidatedConditionAlert';

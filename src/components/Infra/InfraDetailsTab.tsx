@@ -1,6 +1,6 @@
-import { EnvironmentDetails } from 'openshift-assisted-ui-lib';
 import * as React from 'react';
-import { InfraEnv } from '../types';
+import { EnvironmentDetails } from 'openshift-assisted-ui-lib';
+import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 import './infra.scss';
 

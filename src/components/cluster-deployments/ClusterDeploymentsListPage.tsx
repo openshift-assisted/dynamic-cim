@@ -1,5 +1,5 @@
 import * as React from 'react';
-
+import { Link } from 'react-router-dom';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { Dropdown, DropdownProps, KebabToggle, DropdownItem } from '@patternfly/react-core';
 import {
@@ -16,9 +16,11 @@ import {
   history,
   useK8sModel,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import { Link } from 'react-router-dom';
+import {
+  AgentClusterInstallK8sResource,
+  ClusterDeploymentK8sResource,
+} from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
-import { AgentClusterInstallK8sResource, ClusterDeploymentK8sResource } from '../types';
 import { canEditCluster } from './utils';
 
 const columns: TableColumn<K8sResourceCommon>[] = [

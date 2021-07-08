@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -10,10 +11,9 @@ import {
   TableData,
   ListPageCreate,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import { Link } from 'react-router-dom';
+import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 import { InfraEnvKind } from '../../kind';
-import { InfraEnv } from '../types';
 
 const columns: TableColumn<InfraEnv>[] = [
   {

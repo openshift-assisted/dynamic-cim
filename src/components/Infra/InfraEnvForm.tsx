@@ -7,9 +7,8 @@ import {
   history,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-
+import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
-import { InfraEnv } from '../types';
 import { getClusterDeployment } from '../../k8s';
 
 import '../styles.scss';
