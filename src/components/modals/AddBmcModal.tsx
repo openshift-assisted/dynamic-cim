@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { k8sCreate } from '@openshift-console/dynamic-plugin-sdk/api';
 import { AddBmcModal as AIAddBmcModal, AddBmcValues } from 'openshift-assisted-ui-lib';
+import { BareMetalHostKind, SecretKind } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { BareMetalHostModel, SecretModel } from '../../models';
-import { BareMetalHostKind, SecretKind } from '../types';
 import { getBareMetalHost, getBareMetalHostCredentialsSecret } from '../../k8s';
 import { useModalDialogsContext } from './ModalContext';
 

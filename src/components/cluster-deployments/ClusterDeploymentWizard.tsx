@@ -24,7 +24,7 @@ import {
   AgentClusterInstallK8sResource,
   AgentK8sResource,
   ClusterDeploymentK8sResource,
-} from '../types';
+} from 'openshift-assisted-ui-lib/dist/src/cim';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { getAICluster } from '../ai-utils';

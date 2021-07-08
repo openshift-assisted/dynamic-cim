@@ -2,7 +2,7 @@ import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
 import { DetailsPage, K8sKind } from '@openshift-console/dynamic-plugin-sdk/api';
 import AgentTable from '../Agent/AgentTable';
-import { InfraEnv, KebabAction } from '../types';
+import { InfraEnv, KebabAction } from 'openshift-assisted-ui-lib/dist/src/cim';
 import {
   ModalDialogsContextProvider,
   useModalDialogsContext,

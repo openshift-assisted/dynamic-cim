@@ -1,4 +1,4 @@
-import { AgentClusterInstallK8sResource } from 'src/components/types';
+import { AgentClusterInstallK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 export type AgentClusterInstallParams = {
   name: string;

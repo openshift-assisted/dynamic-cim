@@ -8,7 +8,7 @@ import {
   AgentClusterInstallStatusConditionType,
   AgentClusterInstallStatusCondition,
   StatusCondition,
-} from './types';
+} from 'openshift-assisted-ui-lib/dist/src/cim';
 import {
   Cluster as AICluster,
   Host as AIHost,
@@ -217,8 +217,8 @@ export const getAICluster = ({
     hostNetworks: getHostNetworks(agents, agentClusterInstall),
     totalHostCount: agents?.length,
     hosts: getAIHosts(agents),
-    installStartedAt: clusterDeployment.status.installStartedTimestamp,
-    installCompletedAt: clusterDeployment.status.installedTimestamp,
+    installStartedAt: clusterDeployment.status?.installStartedTimestamp,
+    installCompletedAt: clusterDeployment.status?.installedTimestamp,
   };
 
   return aiCluster;
