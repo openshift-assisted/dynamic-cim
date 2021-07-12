@@ -30,9 +30,9 @@ import {
   ClusterDeploymentK8sResource,
   getAICluster,
   getClusterValidatedCondition,
+  ValidatedConditionAlert,
 } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
-import ValidatedConditionAlert from './ValidatedConditionAlert';
 import { canEditCluster } from './utils';
 
 type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
