@@ -1,7 +1,7 @@
-import {
-  AgentClusterInstallK8sResource,
-  getClusterStatus,
-} from 'openshift-assisted-ui-lib/dist/src/cim';
+import { CIM } from 'openshift-assisted-ui-lib';
+import { AgentClusterInstallK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim';
+
+const { getClusterStatus } = CIM;
 
 export const canEditCluster = (agentClusterInstall?: AgentClusterInstallK8sResource): boolean => {
   if (!agentClusterInstall) {
