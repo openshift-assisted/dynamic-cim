@@ -1,7 +1,9 @@
 import * as React from 'react';
 
-import { DownloadIsoModal as AIDownloadIsoModal } from 'openshift-assisted-ui-lib';
+import { CIM } from 'openshift-assisted-ui-lib';
 import { useModalDialogsContext } from './ModalContext';
+
+const { DownloadIsoModal: AIDownloadIsoModal } = CIM;
 
 const DownloadIsoModal: React.FC = () => {
   const { downloadIsoDialog } = useModalDialogsContext();

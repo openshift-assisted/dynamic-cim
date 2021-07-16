@@ -1,13 +1,6 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
-import {
-  ClusterDeploymentWizard as AIClusterDeploymentWizard,
-  ClusterDeploymentDetailsValues,
-  ClusterDeploymentNetworkingValues,
-  Types,
-  LoadingState,
-  CIM,
-} from 'openshift-assisted-ui-lib';
+import { CIM } from 'openshift-assisted-ui-lib';
 import {
   useK8sWatchResource,
   k8sCreate,
@@ -21,18 +14,13 @@ import {
   ClusterDeploymentKind,
   ClusterImageSetKind,
 } from '../../kind';
-import {
-  AgentClusterInstallK8sResource,
-  AgentK8sResource,
-  ClusterDeploymentK8sResource,
-} from 'openshift-assisted-ui-lib/dist/src/cim';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
-const { getAICluster } = CIM;
+const { getAICluster, ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -58,7 +46,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const [clusterDeployment, , clusterDeploymentError] =
-    useK8sWatchResource<ClusterDeploymentK8sResource>(
+    useK8sWatchResource<CIM.ClusterDeploymentK8sResource>(
       clusterDeploymentName
         ? {
             kind: ClusterDeploymentKind,
@@ -72,7 +60,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   // it is ok if missing
   const clusterInstallRefName = clusterDeployment?.spec?.clusterInstallRef?.name;
-  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>(
+  const [agentClusterInstall] = useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
     clusterInstallRefName
       ? {
           kind: AgentClusterInstallKind,
@@ -93,7 +81,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   });
   const ocpVersions = React.useMemo(
     () =>
-      (clusterImageSets || []).map((clusterImageSet, index): Types.OpenshiftVersionOptionType => {
+      (clusterImageSets || []).map((clusterImageSet, index): CIM.OpenshiftVersionOptionType => {
         return {
           label: clusterImageSet.metadata.name,
           value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
@@ -104,7 +92,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [clusterImageSets],
   );
 
-  const [clusterDeployments] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
+  const [clusterDeployments] = useK8sWatchResource<CIM.ClusterDeploymentK8sResource[]>({
     kind: ClusterDeploymentKind,
     namespace, // TODO(mlibra): Double check that we want to validate cluster name for namespace-only (and not cluster-scope, mind prvileges)
     namespaced: true,
@@ -119,7 +107,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const agentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
-  const [agents, , agentsError] = useK8sWatchResource<AgentK8sResource[]>(
+  const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     agentSelector
       ? {
           kind: AgentKind,
@@ -131,7 +119,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const onClusterCreate = React.useCallback(
-    async ({ pullSecret, openshiftVersion, ...params }: ClusterDeploymentDetailsValues) => {
+    async ({ pullSecret, openshiftVersion, ...params }: CIM.ClusterDeploymentDetailsValues) => {
       try {
         const { name } = params;
         const labels = undefined; // parseStringLabels(['foo=bar']); // TODO(mlibra): Required by backend but can be selected in a later step
@@ -169,7 +157,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const onClusterDetailsUpdate = React.useCallback(
-    async (values: ClusterDeploymentDetailsValues) => {
+    async (values: CIM.ClusterDeploymentDetailsValues) => {
       // do we need to re-query the ClusterDeployment??
       try {
         const clusterDeploymentPatches = [];
@@ -213,7 +201,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const onSaveDetails = React.useCallback(
-    async (values: ClusterDeploymentDetailsValues) => {
+    async (values: CIM.ClusterDeploymentDetailsValues) => {
       if (clusterDeploymentName) {
         // we have already either queried (the Edit flow) or created it
         await onClusterDetailsUpdate(values);
@@ -225,7 +213,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   );
 
   const onSaveNetworking = React.useCallback(
-    async (values: ClusterDeploymentNetworkingValues) => {
+    async (values: CIM.ClusterDeploymentNetworkingValues) => {
       try {
         const agentClusterInstallPatches = [];
 

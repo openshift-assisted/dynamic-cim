@@ -17,30 +17,29 @@ import {
   PageComponentProps,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import {
+import { CIM } from 'openshift-assisted-ui-lib';
+import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
+import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
+import { canEditCluster } from './utils';
+
+const {
+  getAICluster,
+  getClusterValidatedCondition,
+  ValidatedConditionAlert,
   ClusterProgress,
   HostsTable,
   LoadingState,
   ClusterPropertiesList,
-  CIM,
-} from 'openshift-assisted-ui-lib';
-import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
-import {
-  AgentClusterInstallK8sResource,
-  AgentK8sResource,
-  ClusterDeploymentK8sResource,
-} from 'openshift-assisted-ui-lib/dist/src/cim';
-import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
-import { canEditCluster } from './utils';
+} = CIM;
 
-const { getAICluster, getClusterValidatedCondition, ValidatedConditionAlert } = CIM;
-
-type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
+type DetailsTabProps = React.PropsWithChildren<
+  PageComponentProps<CIM.ClusterDeploymentK8sResource>
+> & {
   agentClusterInstall: K8sResourceCommon;
 };
 
 const getClusterDeploymentActions =
-  (agentClusterInstall?: AgentClusterInstallK8sResource): KebabOptionsCreator =>
+  (agentClusterInstall?: CIM.AgentClusterInstallK8sResource): KebabOptionsCreator =>
   (kindObj: K8sKind, clusterDeployment: K8sResourceCommon) => {
     const { namespace, name } = clusterDeployment.metadata;
     return [
@@ -70,7 +69,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
   const [detailsCardExpanded, setDetailsCardExpanded] = React.useState(true);
 
   const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallError] =
-    useK8sWatchResource<AgentClusterInstallK8sResource>({
+    useK8sWatchResource<CIM.AgentClusterInstallK8sResource>({
       kind: AgentClusterInstallKind,
       name: clusterDeployment.spec.clusterInstallRef.name,
       namespace: clusterDeployment.metadata.namespace,
@@ -79,7 +78,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
     });
 
   const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
-  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<AgentK8sResource[]>(
+  const [agents, agentsLoaded, agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     agentSelector
       ? {
           kind: AgentKind,
@@ -125,7 +124,12 @@ export const ClusterDetail = (props: DetailsTabProps) => {
               </CardHeader>
               <CardExpandableContent>
                 <CardBody>
-                  <ClusterProgress cluster={cluster} />
+                  <ClusterProgress
+                    cluster={cluster}
+                    onFetchEvents={async () =>
+                      console.log('ClusterProgress - onFetchEvents missing implementation')
+                    }
+                  />
                 </CardBody>
               </CardExpandableContent>
             </Card>
@@ -151,6 +155,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                   EmptyState={() => <div>empty</div>}
                   columns={columns}
                   className="agents-table"
+                  AdditionalNTPSourcesDialogToggleComponent={CIM.AdditionalNTPSourcesDialogToggle}
                 />
               </CardBody>
             </CardExpandableContent>
@@ -206,7 +211,7 @@ type ClusterDeploymentDetailsProps = {
 };
 
 const ClusterDeploymentDetails: React.FC<ClusterDeploymentDetailsProps> = (props) => {
-  const [agentClusterInstall] = useK8sWatchResource<AgentClusterInstallK8sResource>({
+  const [agentClusterInstall] = useK8sWatchResource<CIM.AgentClusterInstallK8sResource>({
     kind: AgentClusterInstallKind,
     name: props.name,
     namespace: props.namespace,

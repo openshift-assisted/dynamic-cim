@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import { HostsTable, LoadingState, CIM } from 'openshift-assisted-ui-lib';
+import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable, expandable } from '@patternfly/react-table';
 import { AgentK8sResource, InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentKind } from '../../kind';
@@ -8,7 +8,7 @@ import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { onEditHostAction, onEditRoleAction } from './actions';
 
-const { getAIHosts } = CIM;
+const { getAIHosts, HostsTable, LoadingState } = CIM;
 
 const getColumns = () => [
   { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
@@ -88,6 +88,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           canEditRole={() => true}
           onEditRole={onEditRoleAction(agentModel, agents)}
           className="agents-table"
+          AdditionalNTPSourcesDialogToggleComponent={CIM.AdditionalNTPSourcesDialogToggle}
         />
       ) : (
         <LoadingState />

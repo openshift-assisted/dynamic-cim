@@ -1,7 +1,9 @@
 import * as React from 'react';
 
-import { EditHostModal as AIEditHostModal } from 'openshift-assisted-ui-lib';
+import { CIM } from 'openshift-assisted-ui-lib';
 import { useModalDialogsContext } from './ModalContext';
+
+const { EditHostModal: AIEditHostModal } = CIM;
 
 const EditHostModal: React.FC = () => {
   const { editHostModal } = useModalDialogsContext();
@@ -10,6 +12,7 @@ const EditHostModal: React.FC = () => {
       isOpen={editHostModal.isOpen}
       onClose={editHostModal.onClose}
       {...editHostModal.data}
+      onFormSaveError={editHostModal.data?.onSave}
     />
   );
 };

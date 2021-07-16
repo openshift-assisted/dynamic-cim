@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { EnvironmentDetails } from 'openshift-assisted-ui-lib';
-import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
+import { CIM } from 'openshift-assisted-ui-lib';
 
 import './infra.scss';
 
+const { EnvironmentDetails } = CIM;
+
 type InfraDetailsTabProps = {
-  obj: InfraEnv;
+  obj: CIM.InfraEnv;
 };
 
 const InfraDetailsTab: React.FC<InfraDetailsTabProps> = ({ obj }) => {
