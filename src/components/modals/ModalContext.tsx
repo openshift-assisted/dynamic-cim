@@ -1,13 +1,10 @@
 import * as React from 'react';
-import { Reducers } from 'openshift-assisted-ui-lib';
-import { Host, Inventory } from 'openshift-assisted-ui-lib/dist/src/api';
-import { HostUpdateParams } from 'openshift-assisted-ui-lib/dist/src/components/hosts/EditHostForm';
+import { CIM } from 'openshift-assisted-ui-lib';
 
 const {
-  dialogsReducer,
-  openDialog: openDialogAction,
-  closeDialog: closeDialogAction,
-} = Reducers.Dialogs;
+  reducer: dialogsReducer,
+  actions: { openDialog: openDialogAction, closeDialog: closeDialogAction },
+} = CIM.Reducers.dialogsSlice;
 
 type DialogId = 'downloadIsoDialog' | 'addBmcDialog' | 'editHostModal';
 
@@ -19,10 +16,10 @@ type DownloadIsoDialogProps = {
 type AddBmcDialogProps = {};
 
 export type EditHostModal = {
-  host?: Host;
-  inventory?: Inventory;
+  host?: CIM.Host;
+  inventory?: CIM.Inventory;
   usedHostnames: string[] | undefined;
-  onSave: (values: HostUpdateParams) => Promise<any>;
+  onSave: (values: CIM.HostUpdateParams) => Promise<any>;
 };
 
 type ModalDialogsDataTypes = {

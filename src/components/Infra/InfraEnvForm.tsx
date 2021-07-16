@@ -1,19 +1,20 @@
 import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
-import { InfraEnvForm } from 'openshift-assisted-ui-lib';
+import { CIM } from 'openshift-assisted-ui-lib';
 import {
   useK8sModel,
   k8sCreate,
   history,
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
-import { InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { getClusterDeployment } from '../../k8s';
+import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 
 import '../styles.scss';
 import './infra.scss';
-import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
+
+const { InfraEnvForm } = CIM;
 
 type InfraEnvWizardProps = {
   match: RMatch<{ ns: string }>;
@@ -25,7 +26,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
-  const [infraEnvs] = useK8sWatchResource<InfraEnv[]>({
+  const [infraEnvs] = useK8sWatchResource<CIM.InfraEnv[]>({
     kind: InfraEnvKind,
     namespace,
     isList: true,
@@ -77,7 +78,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
         }),
       );
 
-      const infraEnv: InfraEnv = {
+      const infraEnv: CIM.InfraEnv = {
         apiVersion: 'agent-install.openshift.io/v1beta1',
         kind: 'InfraEnv',
         metadata: {
