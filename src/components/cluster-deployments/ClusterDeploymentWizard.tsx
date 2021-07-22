@@ -110,7 +110,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     async ({ pullSecret, openshiftVersion, ...params }: CIM.ClusterDeploymentDetailsValues) => {
       try {
         const { name } = params;
-        const labels = undefined; // parseStringLabels(['foo=bar']); // TODO(mlibra): Required by backend but can be selected in a later step
+        const labels = undefined; // will be set later (Hosts Selection)
 
         const secret = await k8sCreate(
           secretModel,
@@ -267,6 +267,41 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [agentClusterInstall, agentClusterInstallModel],
   );
 
+  const onSaveHostsSelection = React.useCallback(
+    async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
+      try {
+        const clusterDeploymentPatches = [];
+
+        console.log('--- onSaveHostsSelection, values: ', values);
+        console.log(
+          'agentClusterInstall: ',
+          agentClusterInstall,
+          ', clusterDeployment: ',
+          clusterDeployment,
+        );
+
+        /* TODO(mlibra): This will not work, requires late binding
+             https://issues.redhat.com/browse/MGMT-4968
+
+        const labels = parseStringLabels(values.labels);
+        appendPatch(
+          clusterDeploymentPatches,
+          '/spec/platform/agentBareMetal/agentSelector/matchLabels',
+          labels,
+          clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels,
+        );
+        */
+
+        if (clusterDeploymentPatches.length > 0) {
+          await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
+        }
+      } catch (e) {
+        throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
+      }
+    },
+    [agentClusterInstall, clusterDeployment, clusterDeploymentModel],
+  );
+
   const onClose = () => {
     const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
     // List page
@@ -303,8 +338,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
-        onEditHost={onEditHostAction(editHostModal, agentModel)}
-        onEditRole={onEditRoleAction(agentModel)}
+        onSaveHostsSelection={onSaveHostsSelection}
+        onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
+        onEditRole={onEditRoleAction(agentModel, agents)}
         canEditHost={() => true}
         canEditRole={() => true}
       />
