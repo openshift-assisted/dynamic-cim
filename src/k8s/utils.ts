@@ -1,8 +1,10 @@
 import _ from 'lodash';
-import { K8sPatch } from 'openshift-assisted-ui-lib/dist/src/cim';
+import { ClusterCIMExtended, K8sPatch } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 // strValues: array of 'key=value' items
-export const parseStringLabels = (strValues) => {
+export const parseStringLabels = (
+  strValues: string[],
+): ClusterCIMExtended['agentSelectorLabels'] => {
   const labels = strValues.reduce((acc, curr) => {
     const label = curr.split('=');
     acc[label[0]] = label[1];
