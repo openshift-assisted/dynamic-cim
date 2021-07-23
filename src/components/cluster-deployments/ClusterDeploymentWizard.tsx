@@ -6,6 +6,7 @@ import {
   ClusterDeploymentNetworkingValues,
   Types,
   LoadingState,
+  CIM,
 } from 'openshift-assisted-ui-lib';
 import {
   useK8sWatchResource,
@@ -27,10 +28,11 @@ import {
 } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
-import { getAICluster } from '../ai-utils';
 import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
+
+const { getAICluster } = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];

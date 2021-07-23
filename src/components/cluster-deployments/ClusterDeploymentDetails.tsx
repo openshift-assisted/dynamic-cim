@@ -22,6 +22,7 @@ import {
   HostsTable,
   LoadingState,
   ClusterPropertiesList,
+  CIM,
 } from 'openshift-assisted-ui-lib';
 import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
 import {
@@ -30,9 +31,9 @@ import {
   ClusterDeploymentK8sResource,
 } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
-import { getAICluster, getClusterValidatedCondition } from '../ai-utils';
-import ValidatedConditionAlert from './ValidatedConditionAlert';
 import { canEditCluster } from './utils';
+
+const { getAICluster, getClusterValidatedCondition, ValidatedConditionAlert } = CIM;
 
 type DetailsTabProps = React.PropsWithChildren<PageComponentProps<ClusterDeploymentK8sResource>> & {
   agentClusterInstall: K8sResourceCommon;

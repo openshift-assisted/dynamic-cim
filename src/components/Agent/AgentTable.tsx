@@ -1,13 +1,14 @@
 import * as React from 'react';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import { HostsTable, LoadingState } from 'openshift-assisted-ui-lib';
+import { HostsTable, LoadingState, CIM } from 'openshift-assisted-ui-lib';
 import { sortable, expandable } from '@patternfly/react-table';
 import { AgentK8sResource, InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { onEditHostAction, onEditRoleAction } from './actions';
-import { getAIHosts } from '../ai-utils';
+
+const { getAIHosts } = CIM;
 
 const getColumns = () => [
   { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
