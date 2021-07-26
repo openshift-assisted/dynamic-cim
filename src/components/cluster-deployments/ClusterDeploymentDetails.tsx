@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { saveAs } from 'file-saver';
 import { match as RMatch } from 'react-router-dom';
 import {
   Card,
@@ -19,8 +20,10 @@ import {
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
+import { k8sGet } from '@openshift-console/dynamic-plugin-sdk/api';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { canEditCluster } from './utils';
+import { SecretModel } from '../../models/ocp';
 
 const {
   getAICluster,
@@ -30,6 +33,9 @@ const {
   HostsTable,
   LoadingState,
   ClusterPropertiesList,
+  ClusterInstallationError,
+  getClusterStatus,
+  KubeconfigDownload,
 } = CIM;
 
 type DetailsTabProps = React.PropsWithChildren<
@@ -99,11 +105,33 @@ export const ClusterDetail = (props: DetailsTabProps) => {
   if (!(agentsLoaded && agentClusterInstallLoaded)) return <LoadingState />;
 
   const cluster = getAICluster({ clusterDeployment, agentClusterInstall, agents });
+  const [clusterStatus, clusterStatusInfo] = getClusterStatus(agentClusterInstall);
+
+  const handleKubeconfigDownload = async () => {
+    const kubeconfigSecretName =
+      agentClusterInstall.spec?.clusterMetadata?.adminKubeconfigSecretRef.name;
+    const kubeconfigSecretNamespace = clusterDeployment.metadata.namespace;
+    agentClusterInstall.spec?.clusterMetadata?.adminKubeconfigSecretRef.name;
+    try {
+      const kubeconfigSecret = await k8sGet(
+        SecretModel,
+        kubeconfigSecretName,
+        kubeconfigSecretNamespace,
+      );
+      const blob = new Blob([atob(kubeconfigSecret.data.kubeconfig)], {
+        type: 'text/plain;charset=utf-8',
+      });
+      saveAs(blob, 'kubeconfig.json');
+    } catch (e) {
+      console.error('Failed to fetch kubeconfig secret.', e);
+    }
+  };
+
   return (
     <div className="co-dashboard-body">
-      {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre>
-      <pre style={{ fontSize: 10 }}>{JSON.stringify(agentClusterInstall, null, 2)}</pre>
-      <pre style={{ fontSize: 10 }}>{JSON.stringify(agents, null, 2)}</pre> */}
+      {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre> */}
+      {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(agentClusterInstall, null, 2)}</pre> */}
+      {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(agents, null, 2)}</pre> */}
       <Stack hasGutter>
         {[
           'preparing-for-installation',
@@ -113,7 +141,8 @@ export const ClusterDetail = (props: DetailsTabProps) => {
           'installed',
           'error',
           'cancelled',
-        ].includes(cluster.status) && (
+          'adding-hosts',
+        ].includes(clusterStatus) && (
           <StackItem>
             <Card id="cluster-installation-progress-card" isExpanded={progressCardExpanded}>
               <CardHeader
@@ -129,12 +158,37 @@ export const ClusterDetail = (props: DetailsTabProps) => {
               </CardHeader>
               <CardExpandableContent>
                 <CardBody>
-                  <ClusterProgress
-                    cluster={cluster}
-                    onFetchEvents={async () =>
-                      console.log('ClusterProgress - onFetchEvents missing implementation')
-                    }
-                  />
+                  <Stack hasGutter>
+                    <StackItem>
+                      <ClusterProgress
+                        cluster={cluster}
+                        onFetchEvents={async () =>
+                          console.log('ClusterProgress - onFetchEvents missing implementation')
+                        }
+                      />
+                    </StackItem>
+                    <StackItem>
+                      <KubeconfigDownload
+                        handleDownload={handleKubeconfigDownload}
+                        clusterId={clusterDeployment.metadata?.uid || ''}
+                        status={clusterStatus}
+                      />
+                    </StackItem>
+                    {['error', 'cancelled'].includes(clusterStatus) && (
+                      <StackItem>
+                        <ClusterInstallationError
+                          title={
+                            clusterStatus === 'cancelled'
+                              ? 'Cluster installation was cancelled'
+                              : undefined
+                          }
+                          statusInfo={clusterStatusInfo}
+                          logsUrl={agentClusterInstall.status?.debugInfo?.logsURL}
+                          openshiftVersion={clusterDeployment.status?.installVersion}
+                        />
+                      </StackItem>
+                    )}
+                  </Stack>
                 </CardBody>
               </CardExpandableContent>
             </Card>
@@ -181,7 +235,6 @@ export const ClusterDetail = (props: DetailsTabProps) => {
             </CardHeader>
             <CardExpandableContent>
               <CardBody>
-                {console.log('status.webConsoleUrl', clusterDeployment.status?.webConsoleUrl)}
                 <ClusterPropertiesList
                   name={clusterDeployment.metadata?.name}
                   id={clusterDeployment.metadata?.uid}
