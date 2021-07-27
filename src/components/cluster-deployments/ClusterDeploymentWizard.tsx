@@ -20,7 +20,7 @@ import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
-const { getAICluster, ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
+const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -74,23 +74,11 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
-  const [clusterImageSets] = useK8sWatchResource<K8sResourceCommon[]>({
+  const [clusterImageSets, loading] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: ClusterImageSetKind,
     namespaced: false,
     isList: true,
   });
-  const ocpVersions = React.useMemo(
-    () =>
-      (clusterImageSets || []).map((clusterImageSet, index): CIM.OpenshiftVersionOptionType => {
-        return {
-          label: clusterImageSet.metadata.name,
-          value: clusterImageSet.metadata.name, // TODO(mlibra): probably wrong but what is expected here?
-          default: index === 0,
-          supportLevel: 'beta', // TODO(mlibra): Map from label "channel"
-        };
-      }),
-    [clusterImageSets],
-  );
 
   const [clusterDeployments] = useK8sWatchResource<CIM.ClusterDeploymentK8sResource[]>({
     kind: ClusterDeploymentKind,
@@ -291,7 +279,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   /* The ocpVersions is needed for initialValues of the Details step.
      In case of the Edit flow (when queriedClusterDeploymentName is set), let's calculate initialValues just once.
    */
-  if (!ocpVersions.length || (queriedClusterDeploymentName && !clusterDeployment)) {
+  if (!loading || (queriedClusterDeploymentName && !clusterDeployment)) {
     return <LoadingState />;
   }
 
@@ -300,19 +288,17 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     throw new Error(agentsError);
   }
 
-  const aiCluster =
-    clusterDeployment && agentClusterInstall
-      ? getAICluster({ clusterDeployment, agentClusterInstall, pullSecretSet: true, agents })
-      : undefined;
-
   // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
   return (
     <>
       <AIClusterDeploymentWizard
         className="cluster-deployment-wizard"
         defaultPullSecret={defaultPullSecret}
-        ocpVersions={ocpVersions}
-        cluster={aiCluster}
+        clusterImages={clusterImageSets}
+        clusterDeployment={clusterDeployment}
+        agentClusterInstall={agentClusterInstall}
+        agents={agents}
+        pullSecretSet
         usedClusterNames={usedClusterNames}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
