@@ -24,6 +24,7 @@ import { k8sGet } from '@openshift-console/dynamic-plugin-sdk/api';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { canEditCluster } from './utils';
 import { SecretModel } from '../../models/ocp';
+import ClusterDeploymentCredentials from './ClusterDeploymentCredentials';
 
 const {
   getAICluster,
@@ -167,6 +168,18 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                         }
                       />
                     </StackItem>
+                    {['installed', 'adding-hosts'].includes(clusterStatus) && (
+                      <StackItem>
+                        <ClusterDeploymentCredentials
+                          cluster={cluster}
+                          namespace={clusterDeployment.metadata.namespace}
+                          adminPasswordSecretRefName={
+                            agentClusterInstall.spec?.clusterMetadata?.adminPasswordSecretRef.name
+                          }
+                          consoleUrl={clusterDeployment.status?.webConsoleURL}
+                        />
+                      </StackItem>
+                    )}
                     <StackItem>
                       <KubeconfigDownload
                         handleDownload={handleKubeconfigDownload}
