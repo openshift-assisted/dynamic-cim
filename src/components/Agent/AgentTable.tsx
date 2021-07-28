@@ -2,7 +2,6 @@ import * as React from 'react';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable, expandable } from '@patternfly/react-table';
-import { AgentK8sResource, InfraEnv } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
@@ -22,13 +21,13 @@ const getColumns = () => [
 ];
 
 type AgentTableProps = {
-  obj: InfraEnv;
+  obj: CIM.InfraEnv;
 };
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();
   const [agentModel] = useK8sModel(AgentKind);
-  const [agents, loaded] = useK8sWatchResource<AgentK8sResource[]>(
+  const [agents, loaded] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     obj.status?.agentLabelSelector
       ? {
           kind: AgentKind,
@@ -84,9 +83,9 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           EmptyState={() => <div>no hosts</div>}
           columns={getColumns()}
           canEditHost={() => true}
-          onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
+          onEditHost={onEditHostAction(editHostModal, agentModel)}
           canEditRole={() => true}
-          onEditRole={onEditRoleAction(agentModel, agents)}
+          onEditRole={onEditRoleAction(agentModel)}
           className="agents-table"
           AdditionalNTPSourcesDialogToggleComponent={CIM.AdditionalNTPSourcesDialogToggle}
         />

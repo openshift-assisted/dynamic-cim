@@ -303,8 +303,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
-        onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
-        onEditRole={onEditRoleAction(agentModel, agents)}
+        onEditHost={onEditHostAction(editHostModal, agentModel)}
+        onEditRole={onEditRoleAction(agentModel)}
         canEditHost={() => true}
         canEditRole={() => true}
       />
