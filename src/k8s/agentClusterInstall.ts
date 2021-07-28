@@ -1,4 +1,4 @@
-import { AgentClusterInstallK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim';
+import { CIM } from 'openshift-assisted-ui-lib';
 
 export type AgentClusterInstallParams = {
   name: string;
@@ -29,8 +29,8 @@ export const getAgentClusterInstall = ({
   serviceNetwork,
   apiVIP,
   ingressVIP,
-}: AgentClusterInstallParams): AgentClusterInstallK8sResource => {
-  const obj: AgentClusterInstallK8sResource = {
+}: AgentClusterInstallParams): CIM.AgentClusterInstallK8sResource => {
+  const obj: CIM.AgentClusterInstallK8sResource = {
     apiVersion: 'extensions.hive.openshift.io/v1beta1',
     kind: 'AgentClusterInstall',
     metadata: {

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { CIM } from 'openshift-assisted-ui-lib';
+import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 
 const {
   reducer: dialogsReducer,
@@ -16,10 +17,9 @@ type DownloadIsoDialogProps = {
 type AddBmcDialogProps = {};
 
 export type EditHostModal = {
-  host?: CIM.Host;
-  inventory?: CIM.Inventory;
+  agent: K8sResourceCommon;
   usedHostnames: string[] | undefined;
-  onSave: (values: CIM.HostUpdateParams) => Promise<any>;
+  onSave: (agent: K8sResourceCommon, hostname: string) => Promise<any>;
 };
 
 type ModalDialogsDataTypes = {

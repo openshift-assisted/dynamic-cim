@@ -3,19 +3,13 @@ import { k8sPatch } from '@openshift-console/dynamic-plugin-sdk/api';
 import { ModalDialogsContextType } from '../modals';
 
 export const onEditHostAction =
-  (
-    editHostModal: ModalDialogsContextType['editHostModal'],
-    agentModel: any,
-    agents: K8sResourceCommon[],
-  ) =>
-  (host, inventory) =>
+  (editHostModal: ModalDialogsContextType['editHostModal'], agentModel: any) =>
+  (agent: K8sResourceCommon) =>
     editHostModal.open({
-      host,
-      inventory,
+      agent,
       usedHostnames: [],
-      onSave: async ({ hostname, hostId }) => {
-        const host = agents.find((h) => h.metadata.uid === hostId);
-        await k8sPatch(agentModel, host, [
+      onSave: async (agent, hostname) => {
+        await k8sPatch(agentModel, agent, [
           {
             op: 'add',
             path: `/spec/hostname`,
@@ -31,8 +25,7 @@ export const onEditHostAction =
     });
 
 export const onEditRoleAction =
-  (agentModel: any, agents: K8sResourceCommon[]) => async (host, role) => {
-    const agent = agents.find((h) => h.metadata.uid === host.id);
+  (agentModel: any) => async (agent: K8sResourceCommon, role: string) =>
     await k8sPatch(agentModel, agent, [
       {
         op: 'replace',
@@ -40,4 +33,3 @@ export const onEditRoleAction =
         value: role,
       },
     ]);
-  };
