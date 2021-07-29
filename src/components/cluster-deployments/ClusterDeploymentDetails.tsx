@@ -2,6 +2,8 @@ import * as React from 'react';
 import { saveAs } from 'file-saver';
 import { match as RMatch } from 'react-router-dom';
 import {
+  Button,
+  ButtonVariant,
   Card,
   CardBody,
   CardExpandableContent,
@@ -37,6 +39,7 @@ const {
   ClusterInstallationError,
   getClusterStatus,
   KubeconfigDownload,
+  EventsModalButton,
 } = CIM;
 
 type DetailsTabProps = React.PropsWithChildren<
@@ -128,6 +131,25 @@ export const ClusterDetail = (props: DetailsTabProps) => {
     }
   };
 
+  const handleFetchEvents = async (props, onSuccess, onError) => {
+    try {
+      const res = await fetch(agentClusterInstall.status?.debugInfo?.eventsURL, {
+        mode: 'same-origin',
+      });
+      const data = await res.json();
+      onSuccess(
+        data.map((event: any) => ({
+          clusterId: event.cluster_id,
+          eventTime: event.event_time,
+          message: event.message,
+          severity: event.severity,
+        })),
+      );
+    } catch (e) {
+      onError('Failed to fetch cluster events.');
+    }
+  };
+
   return (
     <div className="co-dashboard-body">
       {/* <pre style={{ fontSize: 10 }}>{JSON.stringify(clusterDeployment, null, 2)}</pre> */}
@@ -176,7 +198,10 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                           adminPasswordSecretRefName={
                             agentClusterInstall.spec?.clusterMetadata?.adminPasswordSecretRef.name
                           }
-                          consoleUrl={clusterDeployment.status?.webConsoleURL}
+                          consoleUrl={
+                            clusterDeployment.status?.webConsoleURL ||
+                            `https://console-openshift-console.apps.${cluster.name}.${cluster.baseDnsDomain}`
+                          }
                         />
                       </StackItem>
                     )}
@@ -185,7 +210,19 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                         handleDownload={handleKubeconfigDownload}
                         clusterId={clusterDeployment.metadata?.uid || ''}
                         status={clusterStatus}
-                      />
+                      />{' '}
+                      <EventsModalButton
+                        id="cluster-events-button"
+                        entityKind="cluster"
+                        cluster={cluster}
+                        title="Cluster Events"
+                        variant={ButtonVariant.link}
+                        style={{ textAlign: 'right' }}
+                        onFetchEvents={handleFetchEvents}
+                        ButtonComponent={Button}
+                      >
+                        View Cluster Events
+                      </EventsModalButton>
                     </StackItem>
                     {['error', 'cancelled'].includes(clusterStatus) && (
                       <StackItem>
