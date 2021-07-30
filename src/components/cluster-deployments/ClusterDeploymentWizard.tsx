@@ -1,4 +1,5 @@
 import * as React from 'react';
+import _ from 'lodash';
 import { RouteComponentProps } from 'react-router';
 import { CIM } from 'openshift-assisted-ui-lib';
 import {
@@ -104,6 +105,20 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
           namespaced: true,
         }
       : undefined,
+  );
+
+  // So far for agent-selector autosuggestion. Quite an expensive operation.
+  const [allAgents, , allAgentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
+    kind: AgentKind,
+    isList: true,
+    // TODO(mlibra): Do we want an all-namespaces query for admins instead??
+    namespaced: true,
+    namespace,
+  });
+  const usedAgentlabels: string[] = React.useMemo(
+    () =>
+      _.uniq(_.flatten((allAgents || []).map((agent) => Object.keys(agent.metadata.labels || {})))),
+    [allAgents],
   );
 
   const onClusterCreate = React.useCallback(
@@ -318,8 +333,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     return <LoadingState />;
   }
 
-  if (clusterDeploymentError || agentsError) {
-    // TODO(mlibra): Render error state
+  if (clusterDeploymentError || agentsError || allAgentsError) {
+    // TODO(mlibra): Render error state instead
     throw new Error(agentsError);
   }
 
@@ -335,6 +350,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         agents={agents}
         pullSecretSet
         usedClusterNames={usedClusterNames}
+        usedAgentlabels={usedAgentlabels}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
