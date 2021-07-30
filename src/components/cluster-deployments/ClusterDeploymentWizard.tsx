@@ -21,7 +21,12 @@ import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
-const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
+const {
+  getAICluster,
+  ClusterDeploymentWizard: AIClusterDeploymentWizard,
+  LoadingState,
+  parseStringLabels,
+} = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -38,6 +43,11 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
   const [agentModel] = useK8sModel(AgentKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
+
+  // TODO(mlibra): set it empty to stop watching resources when not needed (i.e. when transitioning??)
+  // Unsaved labels entered by the user on the Hosts Selection step
+  const [masterAgentSelector, setMasterAgentSelector] = React.useState<string[]>();
+  const [workerAgentSelector, setWorkerAgentSelector] = React.useState<string[]>();
 
   const { editHostModal } = useModalDialogsContext();
   const [clusterDeploymentName, setClusterDeploymentName] = React.useState<string>();
@@ -119,6 +129,47 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     () =>
       _.uniq(_.flatten((allAgents || []).map((agent) => Object.keys(agent.metadata.labels || {})))),
     [allAgents],
+  );
+
+  // That can be calculated from the allAgents but this is easier and safer
+  const [matchingMasterAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    masterAgentSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: {
+            matchLabels: parseStringLabels(masterAgentSelector),
+          },
+          namespaced: true,
+        }
+      : undefined,
+  );
+  // matchingMastersCount === undefined is valid value
+  const matchingMastersCount = matchingMasterAgents?.length;
+
+  const [matchingWorkersAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    workerAgentSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: {
+            matchLabels: parseStringLabels(workerAgentSelector),
+          },
+          namespaced: true,
+        }
+      : undefined,
+  );
+  // matchingWorkersCount === undefined is a valid value
+  const matchingWorkersCount = matchingWorkersAgents?.length;
+
+  const onMasterAgentSelectorChange = React.useCallback(
+    (newTags: string[]) => setMasterAgentSelector(newTags),
+    [setMasterAgentSelector],
+  );
+
+  const onWorkerAgentSelectorChange = React.useCallback(
+    (newTags: string[]) => setWorkerAgentSelector(newTags),
+    [setWorkerAgentSelector],
   );
 
   const onClusterCreate = React.useCallback(
@@ -351,6 +402,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         pullSecretSet
         usedClusterNames={usedClusterNames}
         usedAgentlabels={usedAgentlabels}
+        matchingMastersCount={matchingMastersCount}
+        onMasterAgentSelectorChange={onMasterAgentSelectorChange}
+        matchingWorkersCount={matchingWorkersCount}
+        onWorkerAgentSelectorChange={onWorkerAgentSelectorChange}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
