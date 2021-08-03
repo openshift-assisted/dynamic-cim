@@ -8,13 +8,12 @@ import {
   useK8sWatchResource,
 } from '@openshift-console/dynamic-plugin-sdk/api';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
-import { getClusterDeployment } from '../../k8s';
-import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 
 import '../styles.scss';
 import './infra.scss';
 
-const { InfraEnvForm } = CIM;
+const { InfraEnvFormPage, getClusterDeployment, getAgentClusterInstall, getInfraEnv, getSecret } =
+  CIM;
 
 type InfraEnvWizardProps = {
   match: RMatch<{ ns: string }>;
@@ -34,93 +33,22 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const usedNames = infraEnvs.map((env) => env.metadata.name);
   const onSubmit = React.useCallback(
     async (values) => {
-      const secret = await k8sCreate(secretModel, {
-        kind: 'Secret',
-        apiVersion: 'v1',
-        metadata: {
-          name: values.name,
-          namespace,
-        },
-        data: {
-          '.dockerconfigjson': btoa(values.pullSecret),
-        },
-        type: 'kubernetes.io/dockerconfigjson',
-      });
-
-      const labels = values.labels.reduce((acc, curr) => {
-        const label = curr.split('=');
-        acc[label[0]] = label[1];
-        return acc;
-      }, {});
-
+      const secret = await k8sCreate(secretModel, getSecret(namespace, values));
       const clusterDeployment = await k8sCreate(
         clusterDepModel,
-        getClusterDeployment({
-          namespace,
-          pullSecretName: secret?.metadata?.name,
-          labels,
-          name: values.name,
-          baseDnsDomain: values.baseDomain,
-        }),
+        getClusterDeployment(secret.metadata.name, namespace, values),
       );
       await k8sCreate(
         agentClusterInstallModel,
-        getAgentClusterInstall({
-          name: values.name,
-          clusterDeploymentRefName: clusterDeployment.metadata.name,
-          namespace,
-          ocpVersion: 'openshift-v4.8.0',
-          controlPlaneAgents: 3,
-          sshPublicKey: values.sshPublicKey,
-          clusterNetworkCidr: '10.128.0.0/14',
-          clusterNetworkHostPrefix: 23,
-          serviceNetwork: '172.30.0.0/16',
-        }),
+        getAgentClusterInstall(clusterDeployment.metadata.name, namespace, values),
       );
-
-      const infraEnv: CIM.InfraEnv = {
-        apiVersion: 'agent-install.openshift.io/v1beta1',
-        kind: 'InfraEnv',
-        metadata: {
-          name: values.name,
-          namespace,
-          labels: {
-            'assisted-install-location': values.location,
-          },
-        },
-        spec: {
-          agentLabels: labels,
-          clusterRef: {
-            name: values.name,
-            namespace,
-          },
-          pullSecretRef: {
-            name: values.name,
-          },
-          sshAuthorizedKey: values.sshPublicKey,
-        },
-        status: {
-          agentLabelSelector: {
-            matchLabels: labels,
-          },
-        },
-      };
-
-      if (values.enableProxy) {
-        infraEnv.spec.proxy = {
-          httpProxy: values.httpProxy,
-          httpsProxy: values.httpsProxy,
-          noProxy: values.noProxy,
-        };
-      }
-
-      return k8sCreate(infraModel, infraEnv);
+      return k8sCreate(infraModel, getInfraEnv(namespace, values));
     },
     [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
   );
   return (
     <div className="co-m-pane__body">
-      <InfraEnvForm
+      <InfraEnvFormPage
         usedNames={usedNames}
         onSubmit={onSubmit}
         onFinish={(values) => history.push(`/k8s/ns/${namespace}/${InfraEnvKind}/${values.name}`)}
