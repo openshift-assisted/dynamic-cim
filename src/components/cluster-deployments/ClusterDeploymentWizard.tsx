@@ -21,12 +21,7 @@ import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
-const {
-  getAICluster,
-  ClusterDeploymentWizard: AIClusterDeploymentWizard,
-  LoadingState,
-  parseStringLabels,
-} = CIM;
+const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState, parseStringLabels } = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -410,8 +405,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
         onSaveHostsSelection={onSaveHostsSelection}
-        onEditHost={onEditHostAction(editHostModal, agentModel, agents)}
-        onEditRole={onEditRoleAction(agentModel, agents)}
+        onEditHost={onEditHostAction(editHostModal, agentModel)}
+        onEditRole={onEditRoleAction(agentModel)}
         canEditHost={() => true}
         canEditRole={() => true}
       />
