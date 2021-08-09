@@ -42,6 +42,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
         agentClusterInstallModel,
         getAgentClusterInstall(clusterDeployment.metadata.name, namespace, values),
       );
+
       return k8sCreate(infraModel, getInfraEnv(namespace, values));
     },
     [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
