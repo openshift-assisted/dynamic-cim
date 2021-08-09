@@ -180,15 +180,17 @@ export const ClusterDetail = (props: DetailsTabProps) => {
                 <ClusterPropertiesList
                   name={clusterDeployment.metadata.name}
                   id={clusterDeployment.metadata.uid}
-                  openshiftVersion={agentClusterInstall.spec.imageSetRef.name}
+                  openshiftVersion={agentClusterInstall.spec?.imageSetRef?.name}
                   baseDnsDomain={clusterDeployment.spec.baseDomain}
-                  apiVip={agentClusterInstall?.spec?.apiVIP}
-                  ingressVip={agentClusterInstall?.spec?.ingressVIP}
-                  clusterNetworkCidr={agentClusterInstall.spec?.networking.clusterNetwork[0].cidr}
-                  clusterNetworkHostPrefix={
-                    agentClusterInstall.spec?.networking.clusterNetwork[0].hostPrefix
+                  apiVip={agentClusterInstall.spec?.apiVIP}
+                  ingressVip={agentClusterInstall.spec?.ingressVIP}
+                  clusterNetworkCidr={
+                    agentClusterInstall.spec?.networking?.clusterNetwork?.[0]?.cidr
                   }
-                  serviceNetworkCidr={agentClusterInstall.spec?.networking.serviceNetwork[0]}
+                  clusterNetworkHostPrefix={
+                    agentClusterInstall.spec?.networking?.clusterNetwork?.[0]?.hostPrefix
+                  }
+                  serviceNetworkCidr={agentClusterInstall.spec?.networking?.serviceNetwork?.[0]}
                   installedTimestamp={clusterDeployment.status?.installedTimestamp}
                 />
               </CardBody>
