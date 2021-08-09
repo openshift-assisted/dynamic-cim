@@ -9,7 +9,7 @@ import { onEditHostAction, onEditRoleAction } from './actions';
 const { InfraEnvAgentTable, LoadingState } = CIM;
 
 type AgentTableProps = {
-  obj: CIM.AgentK8sResource;
+  obj: CIM.InfraEnvK8sResource;
 };
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {

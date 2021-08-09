@@ -6,7 +6,7 @@ import './infra.scss';
 const { EnvironmentDetails } = CIM;
 
 type InfraDetailsTabProps = {
-  obj: CIM.InfraEnv;
+  obj: CIM.InfraEnvK8sResource;
 };
 
 const InfraDetailsTab: React.FC<InfraDetailsTabProps> = ({ obj }) => (
