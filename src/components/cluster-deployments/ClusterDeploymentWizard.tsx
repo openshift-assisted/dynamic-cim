@@ -22,12 +22,59 @@ import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../
 import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
 
-const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState, parseStringLabels } = CIM;
+const {
+  ClusterDeploymentWizard: AIClusterDeploymentWizard,
+  LoadingState,
+  parseStringLabels,
+  AGENT_LOCATION_LABEL_KEY,
+} = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
   namespace: string;
   queriedClusterDeploymentName?: string;
+};
+
+const getUsedClusterNames = (
+  current?: CIM.ClusterDeploymentK8sResource,
+  clusterDeployments: CIM.ClusterDeploymentK8sResource[] = [],
+): string[] =>
+  clusterDeployments
+    .filter((cd) => current?.metadata?.uid !== cd.metadata.uid)
+    .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`);
+
+const getUsedAgentLabels = (agents: CIM.AgentK8sResource[] = []): string[] =>
+  _.uniq(_.flatten(agents.map((agent) => Object.keys(agent.metadata.labels || {}))));
+
+const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocation[] => {
+  const agentLocationsTemp = {};
+  agents.forEach((agent) => {
+    const loc = agent.metadata?.labels?.[AGENT_LOCATION_LABEL_KEY];
+    if (loc) {
+      agentLocationsTemp[loc] = agentLocationsTemp[loc] || {
+        itemCount: 0,
+        // additional stats come here
+      };
+      agentLocationsTemp[loc].itemCount++;
+    }
+  });
+  const agentLocations: CIM.AgentLocation[] = Object.keys(agentLocationsTemp).map((loc) => ({
+    value: loc,
+    ...agentLocationsTemp[loc],
+  }));
+
+  // These two are just for debugging:
+  agentLocations.push({
+    value: 'foo',
+    itemCount: 3,
+  });
+  agentLocations.push({
+    value: 'bar',
+    itemCount: 2,
+  });
+
+  console.log('--- agentLocations: ', agentLocations);
+  return agentLocations;
 };
 
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
@@ -95,10 +142,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     isList: true,
   });
   const usedClusterNames = React.useMemo(
-    () =>
-      (clusterDeployments || [])
-        .filter((cd) => clusterDeployment?.metadata?.uid !== cd.metadata?.uid)
-        .map((cd): string => `${cd.metadata?.name}.${cd.spec?.baseDomain}`),
+    () => getUsedClusterNames(clusterDeployment, clusterDeployments),
     [clusterDeployments, clusterDeployment],
   );
 
@@ -122,11 +166,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     namespaced: true,
     namespace,
   });
-  const usedAgentlabels: string[] = React.useMemo(
-    () =>
-      _.uniq(_.flatten((allAgents || []).map((agent) => Object.keys(agent.metadata.labels || {})))),
-    [allAgents],
-  );
+  const usedAgentlabels: string[] = React.useMemo(() => getUsedAgentLabels(allAgents), [allAgents]);
+  const agentLocations = React.useMemo(() => getAgentLocations(allAgents), [allAgents]);
 
   // That can be calculated from the allAgents but this is easier and safer
   const [matchingMasterAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
@@ -333,26 +374,46 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const onSaveHostsSelection = React.useCallback(
     async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
       try {
+        console.log('--- onSaveHostsSelection, values: ', values);
+
         const clusterDeploymentPatches = [];
 
-        console.log('--- onSaveHostsSelection, values: ', values);
+        // TODO(mlibra) To save:
+        // - agentSelector (labels + locations)
+        // - useMastersAsWorkers
+        // - workerLabels
+        //   - clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels must be specific
+        // - autoSelectMasters - can be calculated based on presence of workerLabels
+        // - locations - use set-based matchExpressions in agentSelectors??
+        const masterLabels = parseStringLabels(values.masterLabels);
+        const matchExpressions = [];
+        if (values.locations?.length > 0) {
+          // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
+          // TODO(mlibra): ensure that Agents can be queried via set-based requirements
+          matchExpressions.push({
+            key: AGENT_LOCATION_LABEL_KEY,
+            operator: 'In',
+            values: values.locations,
+          });
+          // masterLabels[AGENT_LOCATION_LABEL_KEY] = values.locations.join(',');
+        }
+
         console.log(
-          'agentClusterInstall: ',
-          agentClusterInstall,
-          ', clusterDeployment: ',
-          clusterDeployment,
+          '--- onSaveHostsSelection, /spec/platform/agentBareMetal/agentSelector/matchLabels: ',
+          masterLabels,
+          ', matchExpressions: ',
+          matchExpressions,
         );
 
         /* TODO(mlibra): This will not work, requires late binding
              https://issues.redhat.com/browse/MGMT-4968
-
-        const labels = parseStringLabels(values.labels);
         appendPatch(
           clusterDeploymentPatches,
           '/spec/platform/agentBareMetal/agentSelector/matchLabels',
-          labels,
+          masterLabels,
           clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels,
         );
+        // TODO: save matchExpressions as well
         */
 
         if (clusterDeploymentPatches.length > 0) {
@@ -362,7 +423,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
       }
     },
-    [agentClusterInstall, clusterDeployment, clusterDeploymentModel],
+    [clusterDeployment, clusterDeploymentModel],
   );
 
   const onClose = () => {
@@ -398,7 +459,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         agents={agents}
         pullSecretSet
         usedClusterNames={usedClusterNames}
-        usedAgentlabels={usedAgentlabels}
+        usedAgentLabels={usedAgentlabels}
+        agentLocations={agentLocations}
         matchingMastersCount={matchingMastersCount}
         onMasterAgentSelectorChange={onMasterAgentSelectorChange}
         matchingWorkersCount={matchingWorkersCount}
