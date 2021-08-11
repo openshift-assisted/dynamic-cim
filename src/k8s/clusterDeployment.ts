@@ -32,6 +32,7 @@ export const getClusterDeployment = ({
       agentBareMetal: {
         agentSelector: {
           matchLabels: labels,
+          // TODO(mlibra): use matchExpressions for "locations"
         },
       },
     },
