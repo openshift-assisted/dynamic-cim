@@ -198,7 +198,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         }
       : undefined,
   );
-  const matchingAgentsCount = matchingAgents?.length;
 
   const onAgentSelectorChange = React.useCallback(
     (props: CIM.AgentSelectorChageProps) => setAgentSelector(props),
@@ -434,6 +433,17 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     throw new Error(agentsError);
   }
 
+  const hostActions = {
+    onEditHost: onEditHostAction(editHostModal, agentModel),
+    canEditHost: () => true,
+    onEditRole: onEditRoleAction(agentModel),
+    canEditRole: () => true,
+    onDeleteHost: () => {
+      console.log('TODO: onDeleteHost');
+    },
+    canDelete: () => false,
+  };
+
   // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
   return (
     <>
@@ -444,21 +454,18 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         clusterDeployment={clusterDeployment}
         agentClusterInstall={agentClusterInstall}
         agents={agents}
+        hostActions={hostActions}
         pullSecretSet
         usedClusterNames={usedClusterNames}
         usedAgentLabels={usedAgentlabels}
         agentLocations={agentLocations}
-        matchingAgentsCount={matchingAgentsCount}
+        matchingAgents={matchingAgents}
         onAgentSelectorChange={onAgentSelectorChange}
         allAgentsCount={allAgents?.length || 0}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
         onSaveHostsSelection={onSaveHostsSelection}
-        onEditHost={onEditHostAction(editHostModal, agentModel)}
-        onEditRole={onEditRoleAction(agentModel)}
-        canEditHost={() => true}
-        canEditRole={() => true}
       />
       <EditHostModal />
     </>
