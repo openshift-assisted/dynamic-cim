@@ -27,6 +27,7 @@ const {
   LoadingState,
   parseStringLabels,
   labelsToArray,
+  getLocationsFormMatchExpressions,
   AGENT_LOCATION_LABEL_KEY,
 } = CIM;
 
@@ -93,10 +94,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   // TODO(mlibra): set it empty to stop watching resources when not needed (i.e. when transitioning??)
   // Unsaved labels entered by the user on the Hosts Selection step
-  const [masterAgentSelector, setMasterAgentSelector] =
-    React.useState<CIM.AgentSelectorChageProps>();
-  const [workerAgentSelector, setWorkerAgentSelector] =
-    React.useState<CIM.AgentSelectorChageProps>();
+  const [agentSelector, setAgentSelector] = React.useState<CIM.AgentSelectorChageProps>();
 
   const { editHostModal } = useModalDialogsContext();
   const [clusterDeploymentName, setClusterDeploymentName] = React.useState<string>();
@@ -132,19 +130,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
       : undefined,
   );
 
-  React.useEffect(() => {
-    if (clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector) {
-      setMasterAgentSelector({
-        labels: labelsToArray(clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector),
-        locations: undefined, // TODO(mlibra): read from matchExpressions of the "agentSelector"
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    /* Just once to intialize */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    !!clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector,
-  ]);
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
 
   const [clusterImageSets, loading] = useK8sWatchResource<K8sResourceCommon[]>({
@@ -164,17 +149,27 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [clusterDeployments, clusterDeployment],
   );
 
-  const agentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
+  const storedAgentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    agentSelector
+    storedAgentSelector
       ? {
           kind: AgentKind,
           isList: true,
-          selector: agentSelector,
+          selector: storedAgentSelector,
           namespaced: true,
         }
       : undefined,
   );
+
+  React.useEffect(() => {
+    if (storedAgentSelector) {
+      setAgentSelector({
+        labels: labelsToArray(storedAgentSelector.matchLabels),
+        locations: getLocationsFormMatchExpressions(storedAgentSelector.matchExpressions),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedAgentSelector]);
 
   // So far for agent-selector autosuggestion. Quite an expensive operation.
   const [allAgents, , allAgentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
@@ -188,46 +183,24 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const agentLocations = React.useMemo(() => getAgentLocations(allAgents), [allAgents]);
 
   // That can be calculated from the allAgents but this is easier and safer
-  const [matchingMasterAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    masterAgentSelector?.labels
+  const [matchingAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    agentSelector?.labels
       ? {
           kind: AgentKind,
           isList: true,
           selector: {
-            matchLabels: parseStringLabels(masterAgentSelector.labels),
-            matchExpressions: getAgentLocationMatchExpression(masterAgentSelector.locations),
+            matchLabels: parseStringLabels(agentSelector.labels),
+            matchExpressions: getAgentLocationMatchExpression(agentSelector.locations),
           },
           namespaced: true,
         }
       : undefined,
   );
-  // matchingMastersCount === undefined is valid value
-  const matchingMastersCount = matchingMasterAgents?.length;
+  const matchingAgentsCount = matchingAgents?.length;
 
-  const [matchingWorkersAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    workerAgentSelector?.labels
-      ? {
-          kind: AgentKind,
-          isList: true,
-          selector: {
-            matchLabels: parseStringLabels(workerAgentSelector.labels),
-            matchExpressions: getAgentLocationMatchExpression(workerAgentSelector.locations),
-          },
-          namespaced: true,
-        }
-      : undefined,
-  );
-  // matchingWorkersCount === undefined is a valid value
-  const matchingWorkersCount = matchingWorkersAgents?.length;
-
-  const onMasterAgentSelectorChange = React.useCallback(
-    (props: CIM.AgentSelectorChageProps) => setMasterAgentSelector(props),
-    [setMasterAgentSelector],
-  );
-
-  const onWorkerAgentSelectorChange = React.useCallback(
-    (props: CIM.AgentSelectorChageProps) => setWorkerAgentSelector(props),
-    [setWorkerAgentSelector],
+  const onAgentSelectorChange = React.useCallback(
+    (props: CIM.AgentSelectorChageProps) => setAgentSelector(props),
+    [setAgentSelector],
   );
 
   const onClusterCreate = React.useCallback(
@@ -405,14 +378,14 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         //   - clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels must be specific
         // - autoSelectMasters - can be calculated based on presence of workerLabels
         // - locations - use set-based matchExpressions in agentSelectors??
-        const masterLabels = parseStringLabels(values.masterLabels);
+        const agentLabels = parseStringLabels(values.agentLabels);
 
         // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
         const matchExpressions = getAgentLocationMatchExpression(values.locations);
 
         console.log(
           '--- onSaveHostsSelection, /spec/platform/agentBareMetal/agentSelector/matchLabels: ',
-          masterLabels,
+          agentLabels,
           ', matchExpressions: ',
           matchExpressions,
         );
@@ -473,10 +446,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         usedClusterNames={usedClusterNames}
         usedAgentLabels={usedAgentlabels}
         agentLocations={agentLocations}
-        matchingMastersCount={matchingMastersCount}
-        onMasterAgentSelectorChange={onMasterAgentSelectorChange}
-        matchingWorkersCount={matchingWorkersCount}
-        onWorkerAgentSelectorChange={onWorkerAgentSelectorChange}
+        matchingAgentsCount={matchingAgentsCount}
+        onAgentSelectorChange={onAgentSelectorChange}
         allAgentsCount={allAgents?.length || 0}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
