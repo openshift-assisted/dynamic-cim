@@ -1,15 +1,10 @@
 import * as React from 'react';
 import _ from 'lodash';
 import { RouteComponentProps } from 'react-router';
-import { CIM } from 'openshift-assisted-ui-lib';
-import {
-  useK8sWatchResource,
-  k8sCreate,
-  k8sPatch,
-  useK8sModel,
-} from '@openshift-console/dynamic-plugin-sdk/api';
-import { MatchExpression } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
+import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
+import { Selector } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { CIM } from 'openshift-assisted-ui-lib';
 import {
   AgentClusterInstallKind,
   AgentKind,
@@ -18,9 +13,16 @@ import {
 } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
-import { appendPatch, getClusterDeployment, getPullSecretResource } from '../../k8s';
-import { getAgentClusterInstall } from '../../k8s/agentClusterInstall';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
+import { getAgentLocationMatchExpression } from './utils';
+import {
+  getOnClose,
+  getOnClusterCreate,
+  getOnClusterDetailsUpdate,
+  getOnSaveDetails,
+  getOnSaveHostsSelection,
+  getOnSaveNetworking,
+} from './transitionCallbacks';
 
 const {
   ClusterDeploymentWizard: AIClusterDeploymentWizard,
@@ -29,6 +31,7 @@ const {
   labelsToArray,
   getLocationsFormMatchExpressions,
   AGENT_LOCATION_LABEL_KEY,
+  RESERVED_AGENT_LABEL_KEY,
 } = CIM;
 
 type ClusterDeploymentWizardProps = {
@@ -68,19 +71,64 @@ const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocati
   return agentLocations;
 };
 
-const getAgentLocationMatchExpression = (locations?: string[]): MatchExpression[] | undefined => {
-  // TODO(mlibra): Implement 'Unspecified' location matching all Agents without location-label set.
-  // However, that will probably not be possible with matchExpressions (we need join the expressions with OR).
-  return locations?.length
-    ? [
-        {
-          key: AGENT_LOCATION_LABEL_KEY,
-          operator: 'In',
-          values: locations,
+const getMatchingAgentsQuery = (agentSelector?: CIM.AgentSelectorChageProps) =>
+  agentSelector?.labels
+    ? {
+        kind: AgentKind,
+        isList: true,
+        selector: {
+          matchLabels: parseStringLabels(agentSelector.labels),
+          matchExpressions: getAgentLocationMatchExpression(agentSelector.locations),
         },
-      ]
+        namespaced: true,
+      }
     : undefined;
-};
+
+const getStoredAgentsQuery = (storedAgentSelector?: Selector) =>
+  storedAgentSelector
+    ? {
+        kind: AgentKind,
+        isList: true,
+        selector: storedAgentSelector,
+        namespaced: true,
+      }
+    : undefined;
+
+const getAgentClusterInstallQuery = (namespace: string, clusterInstallRefName?: string) =>
+  clusterInstallRefName
+    ? {
+        kind: AgentClusterInstallKind,
+        name: clusterInstallRefName,
+        namespace,
+        namespaced: true,
+        isList: false,
+      }
+    : undefined;
+
+const getClusterDeploymentQuery = (namespace: string, clusterDeploymentName?: string) =>
+  clusterDeploymentName
+    ? {
+        kind: ClusterDeploymentKind,
+        name: clusterDeploymentName,
+        namespace,
+        namespaced: true,
+        isList: false,
+      }
+    : undefined;
+
+const getReservedAgentsQuery = (namespace: string, clusterDeploymentUID?: string) =>
+  clusterDeploymentUID
+    ? {
+        kind: AgentKind,
+        isList: true,
+        selector: {
+          matchLabels: {
+            [RESERVED_AGENT_LABEL_KEY]: clusterDeploymentUID,
+          },
+        },
+        namespaced: true,
+      }
+    : undefined;
 
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
@@ -105,29 +153,12 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   const [clusterDeployment, , clusterDeploymentError] =
     useK8sWatchResource<CIM.ClusterDeploymentK8sResource>(
-      clusterDeploymentName
-        ? {
-            kind: ClusterDeploymentKind,
-            name: clusterDeploymentName,
-            namespace,
-            namespaced: true,
-            isList: false,
-          }
-        : undefined,
+      getClusterDeploymentQuery(namespace, clusterDeploymentName),
     );
 
   // it is ok if missing
-  const clusterInstallRefName = clusterDeployment?.spec?.clusterInstallRef?.name;
   const [agentClusterInstall] = useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
-    clusterInstallRefName
-      ? {
-          kind: AgentClusterInstallKind,
-          name: clusterInstallRefName,
-          namespace,
-          namespaced: true,
-          isList: false,
-        }
-      : undefined,
+    getAgentClusterInstallQuery(namespace, clusterDeployment?.spec?.clusterInstallRef?.name),
   );
 
   const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
@@ -151,27 +182,23 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   const storedAgentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    storedAgentSelector
-      ? {
-          kind: AgentKind,
-          isList: true,
-          selector: storedAgentSelector,
-          namespaced: true,
-        }
-      : undefined,
+    getStoredAgentsQuery(storedAgentSelector),
   );
 
+  // Initialize the first read of matchingAgents
   React.useEffect(() => {
     if (storedAgentSelector) {
+      const filteredLabels = { ...(storedAgentSelector.matchLabels || {}) };
+      delete filteredLabels[RESERVED_AGENT_LABEL_KEY];
       setAgentSelector({
-        labels: labelsToArray(storedAgentSelector.matchLabels),
+        labels: labelsToArray(filteredLabels),
         locations: getLocationsFormMatchExpressions(storedAgentSelector.matchExpressions),
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storedAgentSelector]);
 
-  // So far for agent-selector autosuggestion. Quite an expensive operation.
+  // So far for agent-selector autosuggestion only. Quite an expensive operation considering how little info we need...
   const [allAgents, , allAgentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
     kind: AgentKind,
     isList: true,
@@ -184,244 +211,83 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   // That can be calculated from the allAgents but this is easier and safer
   const [matchingAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    agentSelector?.labels
-      ? {
-          kind: AgentKind,
-          isList: true,
-          selector: {
-            matchLabels: parseStringLabels(agentSelector.labels),
-            matchExpressions: getAgentLocationMatchExpression(agentSelector.locations),
-          },
-          namespaced: true,
-        }
-      : undefined,
+    getMatchingAgentsQuery(agentSelector),
   );
+
+  const [reservedAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    getReservedAgentsQuery(namespace, clusterDeployment?.metadata?.uid),
+  );
+  const selectedHostIds: string[] = reservedAgents?.map((agent) => agent.metadata.uid) || [];
 
   const onAgentSelectorChange = React.useCallback(
     (props: CIM.AgentSelectorChageProps) => setAgentSelector(props),
     [setAgentSelector],
   );
 
-  const onClusterCreate = React.useCallback(
-    async ({ pullSecret, openshiftVersion, ...params }: CIM.ClusterDeploymentDetailsValues) => {
-      try {
-        const { name } = params;
-        const labels = undefined; // will be set later (Hosts Selection)
-
-        const secret = await k8sCreate(
-          secretModel,
-          getPullSecretResource({ namespace, name, pullSecret }),
-        );
-        const pullSecretName = secret?.metadata?.name;
-        const createdClusterDeployment = await k8sCreate(
-          clusterDeploymentModel,
-          getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
-        );
-
-        // keep watching the newly created resource from now on
-        setClusterDeploymentName(createdClusterDeployment.metadata.name);
-
-        await k8sCreate(
-          agentClusterInstallModel,
-          getAgentClusterInstall({
-            name,
-            clusterDeploymentRefName: createdClusterDeployment.metadata.name,
-            namespace,
-            ocpVersion: openshiftVersion,
-          }),
-        );
-
-        // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
-      } catch (e) {
-        // A string-only is expected. Or change the ClusterDeploymentDetails in the assisted-ui-lib
-        throw `Failed to cretate the ClusterDeployment or gentClusterInstall resource: ${e.message}`;
-      }
-    },
-    [namespace, agentClusterInstallModel, secretModel, clusterDeploymentModel],
+  const onClose = React.useMemo(
+    () => getOnClose({ namespace, history, clusterDeployment }),
+    [namespace, history, clusterDeployment],
   );
 
-  const onClusterDetailsUpdate = React.useCallback(
-    async (values: CIM.ClusterDeploymentDetailsValues) => {
-      // do we need to re-query the ClusterDeployment??
-      try {
-        const clusterDeploymentPatches = [];
-        const agentClusterInstallPatches = [];
-
-        // pullSecret, highAvailabilityMode, useRedHatDnsService can not be changed
-
-        /* TODO(mlibra): Uncomment once we can update the ClusterDeployment resource
-      Issue: Failed to patch the ClusterDeployment resource: admission webhook "clusterdeploymentvalidators.admission.hive.openshift.io" denied
-      the request: Attempted to change ClusterDeployment.Spec which is immutable 
-      except for CertificateBundles,ClusterMetadata,ControlPlaneConfig,Ingress,Installed,PreserveOnDelete,ClusterPoolRef,PowerState,HibernateAfter,InstallAttemptsLimit,MachineManagement fields.
-      Unsupported change: ClusterName: (mlibra-05 => mlibra-07)
-
-        appendPatch(clusterDeploymentPatches, '/spec/clusterName', values.name, clusterDeployment.spec?.clusterName);
-        appendPatch(
-          clusterDeploymentPatches,
-          '/spec/baseDomain',
-          values.baseDnsDomain,
-          clusterDeployment.spec?.baseDomain,
-        );
-        */
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/imageSetRef/name',
-          values.openshiftVersion,
-          agentClusterInstall.spec?.imageSetRef?.name,
-        );
-
-        if (clusterDeploymentPatches.length > 0) {
-          await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
-        }
-        if (agentClusterInstallPatches.length > 0) {
-          await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
-        }
-      } catch (e) {
-        throw `Failed to patch the ClusterDeployment or AgentClusterInstall resource: ${e.message}`;
-      }
-    },
-    [agentClusterInstall, clusterDeployment, agentClusterInstallModel, clusterDeploymentModel],
+  const onClusterDetailsUpdate = React.useMemo(
+    () =>
+      getOnClusterDetailsUpdate({
+        agentClusterInstall,
+        clusterDeployment,
+        clusterDeploymentModel,
+        agentClusterInstallModel,
+      }),
+    [agentClusterInstall, clusterDeployment, clusterDeploymentModel, agentClusterInstallModel],
   );
 
-  const onSaveDetails = React.useCallback(
-    async (values: CIM.ClusterDeploymentDetailsValues) => {
-      if (clusterDeploymentName) {
-        // we have already either queried (the Edit flow) or created it
-        await onClusterDetailsUpdate(values);
-      } else {
-        await onClusterCreate(values);
-      }
-    },
-    [onClusterCreate, onClusterDetailsUpdate, clusterDeploymentName],
+  const onClusterCreate = React.useMemo(
+    () =>
+      getOnClusterCreate({
+        secretModel,
+        namespace,
+        clusterDeploymentModel,
+        setClusterDeploymentName,
+        agentClusterInstallModel,
+      }),
+    [
+      secretModel,
+      namespace,
+      clusterDeploymentModel,
+      setClusterDeploymentName,
+      agentClusterInstallModel,
+    ],
+  );
+  const onSaveDetails = React.useMemo(
+    () => getOnSaveDetails({ clusterDeploymentName, onClusterDetailsUpdate, onClusterCreate }),
+    [clusterDeploymentName, onClusterDetailsUpdate, onClusterCreate],
   );
 
-  const onSaveNetworking = React.useCallback(
-    async (values: CIM.ClusterDeploymentNetworkingValues) => {
-      try {
-        const agentClusterInstallPatches = [];
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/sshPublicKey',
-          values.sshPublicKey,
-          agentClusterInstall.spec?.sshPublicKey,
-        );
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/networking/clusterNetwork',
-          [
-            {
-              cidr: values.clusterNetworkCidr,
-              hostPrefix: values.clusterNetworkHostPrefix,
-            },
-          ],
-          agentClusterInstall.spec?.networking?.clusterNetwork,
-        );
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/networking/serviceNetwork',
-          [values.serviceNetworkCidr],
-          agentClusterInstall.spec?.networking?.serviceNetwork,
-        );
-
-        // Setting Machine network CIDR is forbidden when cluster is not in vip-dhcp-allocation mode (which is not soppurted ATM anyway)
-        if (values.vipDhcpAllocation) {
-          const hostSubnet = values.hostSubnet?.split(' ')?.[0];
-          const machineNetworkValue = hostSubnet ? [{ cidr: hostSubnet }] : [];
-          appendPatch(
-            agentClusterInstallPatches,
-            '/spec/networking/machineNetwork',
-            machineNetworkValue,
-            agentClusterInstall.spec?.networking?.machineNetwork,
-          );
-        }
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/apiVIP',
-          values.apiVip,
-          agentClusterInstall.spec?.apiVIP,
-        );
-
-        appendPatch(
-          agentClusterInstallPatches,
-          '/spec/ingressVIP',
-          values.ingressVip,
-          agentClusterInstall.spec?.ingressVIP,
-        );
-
-        if (agentClusterInstallPatches.length > 0) {
-          await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
-        }
-      } catch (e) {
-        throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
-      }
-    },
+  const onSaveNetworking = React.useMemo(
+    () => getOnSaveNetworking({ agentClusterInstall, agentClusterInstallModel }),
     [agentClusterInstall, agentClusterInstallModel],
   );
 
-  const onSaveHostsSelection = React.useCallback(
-    async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
-      try {
-        console.log('--- onSaveHostsSelection, values: ', values);
-
-        const clusterDeploymentPatches = [];
-
-        // TODO(mlibra) To save:
-        // - agentSelector (labels + locations)
-        // - useMastersAsWorkers
-        // - workerLabels
-        //   - clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels must be specific
-        // - autoSelectMasters - can be calculated based on presence of workerLabels
-        // - locations - use set-based matchExpressions in agentSelectors??
-        const agentLabels = parseStringLabels(values.agentLabels);
-
-        // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
-        const matchExpressions = getAgentLocationMatchExpression(values.locations);
-
-        console.log(
-          '--- onSaveHostsSelection, /spec/platform/agentBareMetal/agentSelector/matchLabels: ',
-          agentLabels,
-          ', matchExpressions: ',
-          matchExpressions,
-        );
-
-        /* TODO(mlibra): This will not work, requires late binding
-             https://issues.redhat.com/browse/MGMT-4968
-        appendPatch(
-          clusterDeploymentPatches,
-          '/spec/platform/agentBareMetal/agentSelector/matchLabels',
-          masterLabels,
-          clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels,
-        );
-        // TODO: save matchExpressions as well
-        */
-
-        if (clusterDeploymentPatches.length > 0) {
-          await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
-        }
-      } catch (e) {
-        throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
-      }
-    },
-    [clusterDeployment, clusterDeploymentModel],
+  const onSaveHostsSelection = React.useMemo(
+    () =>
+      getOnSaveHostsSelection({
+        clusterDeployment,
+        oldReservedAgents: reservedAgents,
+        agentModel,
+        matchingAgents,
+      }),
+    [clusterDeployment, reservedAgents, agentModel, matchingAgents],
   );
 
-  const onClose = () => {
-    const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
-    // List page
-    // history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
-
-    // Details page
-    history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata?.name}`);
+  const hostActions = {
+    onEditHost: onEditHostAction(editHostModal, agentModel),
+    canEditHost: () => true,
+    onEditRole: onEditRoleAction(agentModel),
+    canEditRole: () => true,
+    onDeleteHost: () => {
+      console.log('TODO: implement onDeleteHost');
+    },
+    canDelete: () => false,
   };
-
-  /* The ocpVersions is needed for initialValues of the Details step.
-     In case of the Edit flow (when queriedClusterDeploymentName is set), let's calculate initialValues just once.
-   */
   if (!loading || (queriedClusterDeploymentName && !clusterDeployment)) {
     return <LoadingState />;
   }
@@ -430,17 +296,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     // TODO(mlibra): Render error state instead
     throw new Error(agentsError);
   }
-
-  const hostActions = {
-    onEditHost: onEditHostAction(editHostModal, agentModel),
-    canEditHost: () => true,
-    onEditRole: onEditRoleAction(agentModel),
-    canEditRole: () => true,
-    onDeleteHost: () => {
-      console.log('TODO: onDeleteHost');
-    },
-    canDelete: () => false,
-  };
 
   // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
   return (
@@ -453,6 +308,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         agentClusterInstall={agentClusterInstall}
         agents={agents}
         hostActions={hostActions}
+        selectedHostIds={selectedHostIds}
         pullSecretSet
         usedClusterNames={usedClusterNames}
         usedAgentLabels={usedAgentlabels}

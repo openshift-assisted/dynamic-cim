@@ -34,6 +34,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   */
 
   // TODO(mlibra): filter-out BMHs which have already Agents
+  // Agents based on BMH have agent-install.openshift.io/bmh label
   /*
   const restBmhs = baremetalhosts.map((h: any) => {
     const hostInventory: Api.Inventory = {
