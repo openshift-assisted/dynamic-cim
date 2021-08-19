@@ -239,27 +239,17 @@ export const getOnSaveHostsSelection =
       // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
       const matchExpressions = getAgentLocationMatchExpression(values.locations);
 
-      console.log(
-        '--- onSaveHostsSelection, /spec/platform/agentBareMetal/agentSelector/matchLabels: ',
-        agentLabels,
-        ', matchExpressions: ',
-        matchExpressions,
-      );
-
       const reservedAgentlabelValue = clusterDeployment.metadata.uid;
-      // query agents with RESERVED_AGENT_LABEL_KEY
-      // const oldReservedAgents: CIM.AgentK8sResource[] = await k8sList(agentModel, {
-      //   ns: namespace,
-      //   labelSelector: {
-      //     matchLabels: {
-      //       [RESERVED_AGENT_LABEL_KEY]: reservedAgentlabelValue,
-      //     },
-      //   },
-      // });
 
       // remove RESERVED_AGENT_LABEL_KEY from de-selected ones
       const releasedAgents = oldReservedAgents.filter(
-        (agent) => !values.selectedHostIds.includes(agent.metadata.uid),
+        // agent was either deselected or not visible in the latest user's matchingLabel selection
+        (agent) =>
+          !values.selectedHostIds.includes(agent.metadata.uid) ||
+          !matchingAgents.find(
+            (matchingAgent: CIM.AgentK8sResource) =>
+              matchingAgent.metadata.uid === agent.metadata.uid,
+          ),
       );
       const releaseResults = await Promise.all(
         releasedAgents.map((agent) => {
@@ -284,6 +274,8 @@ export const getOnSaveHostsSelection =
           .map((agentId) =>
             matchingAgents.find((agent: CIM.AgentK8sResource) => agent.metadata.uid === agentId),
           )
+          // why filter()? The user can change labels after making a host-selection and than continue. Take selection of just those "visible ones".
+          .filter(Boolean)
           .map((agent) => {
             const newLabels = { ...(agent.metadata.labels || {}) };
             newLabels[RESERVED_AGENT_LABEL_KEY] = reservedAgentlabelValue;
