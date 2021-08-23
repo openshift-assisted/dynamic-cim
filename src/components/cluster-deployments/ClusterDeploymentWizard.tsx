@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { RouteComponentProps } from 'react-router';
 import { CIM } from 'openshift-assisted-ui-lib';
 import {
@@ -33,6 +34,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   namespace,
   queriedClusterDeploymentName,
 }) => {
+  const { t } = useTranslation();
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
   const [agentModel] = useK8sModel(AgentKind);
@@ -138,10 +140,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
       } catch (e) {
         // A string-only is expected. Or change the ClusterDeploymentDetails in the assisted-ui-lib
-        throw `Failed to cretate the ClusterDeployment or gentClusterInstall resource: ${e.message}`;
+        throw t('dynamic-cim~failed-to-create-CD', { msg: e.message });
       }
     },
-    [namespace, agentClusterInstallModel, secretModel, clusterDeploymentModel],
+    [namespace, agentClusterInstallModel, secretModel, clusterDeploymentModel, t],
   );
 
   const onClusterDetailsUpdate = React.useCallback(

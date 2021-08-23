@@ -22,19 +22,7 @@ import {
 } from 'openshift-assisted-ui-lib/dist/src/cim';
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { canEditCluster } from './utils';
-
-const columns: TableColumn<K8sResourceCommon>[] = [
-  {
-    title: 'Name',
-  },
-  {
-    title: 'Status',
-  },
-  {
-    title: 'Distribution version',
-  },
-  // plus actions
-];
+import { useTranslation } from 'react-i18next';
 
 type ClusterDeploymentRowData = {
   clusterDeployment: ClusterDeploymentK8sResource;
@@ -46,11 +34,14 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   index,
   style,
 }) => {
+  const { t } = useTranslation();
+
   const [isKebabOpen, setKebabOpen] = React.useState(false);
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
 
   const { clusterDeployment, agentClusterInstall } = obj;
   const { uid = '', name, namespace } = clusterDeployment?.metadata || {};
+
   const kebabActions = [
     <DropdownItem
       key="edit"
@@ -58,7 +49,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
       onClick={() => history.push(`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}/edit`)}
       isDisabled={!canEditCluster(agentClusterInstall)}
     >
-      Edit
+      {t('dynamic-cim~Edit')}
     </DropdownItem>,
     <DropdownItem
       key="delete"
@@ -68,7 +59,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
         k8sKill(clusterDeploymentModel, clusterDeployment);
       }}
     >
-      Delete
+      {t('dynamic-cim~Delete')}
     </DropdownItem>,
   ];
 
@@ -100,6 +91,7 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
 };
 
 const ClusterDeploymentsListPage: React.FC = () => {
+  const { t } = useTranslation();
   const [clusterDeployments, loaded, error] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
     kind: ClusterDeploymentKind,
     isList: true,
@@ -127,9 +119,22 @@ const ClusterDeploymentsListPage: React.FC = () => {
       ),
     }));
 
+  const columns: TableColumn<K8sResourceCommon>[] = [
+    {
+      title: t('dynamic-cim~Name'),
+    },
+    {
+      title: t('dynamic-cim~Status'),
+    },
+    {
+      title: t('dynamic-cim~Distribution version'),
+    },
+    // plus actions
+  ];
+
   return (
     <>
-      <ListPageHeader title="Clusters">
+      <ListPageHeader title={t('dynamic-cim~Clusters')}>
         {<ListPageCreate groupVersionKind={ClusterDeploymentKind}>Create Cluster</ListPageCreate>}
       </ListPageHeader>
       <ListPageBody>
