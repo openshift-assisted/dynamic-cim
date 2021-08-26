@@ -72,13 +72,14 @@ const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocati
   return agentLocations;
 };
 
+// Assumption: The user is expected to enter location before querying
 const getMatchingAgentsQuery = (agentSelector?: CIM.AgentSelectorChageProps) =>
-  agentSelector?.labels
+  agentSelector?.locations?.length
     ? {
         kind: AgentKind,
         isList: true,
         selector: {
-          matchLabels: parseStringLabels(agentSelector.labels),
+          matchLabels: parseStringLabels(agentSelector?.labels || []),
           matchExpressions: getAgentLocationMatchExpression(agentSelector.locations),
         },
         namespaced: true,
@@ -208,14 +209,39 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     namespaced: true,
     namespace,
   });
-  const usedAgentlabels: string[] = React.useMemo(() => getUsedAgentLabels(allAgents), [allAgents]);
+  // const usedAgentlabels: string[] = React.useMemo(() => getUsedAgentLabels(allAgents), [allAgents]);
   const agentLocations = React.useMemo(() => getAgentLocations(allAgents), [allAgents]);
 
-  // That can be calculated from the allAgents but this is easier and safer
-  const [matchingAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+  const [matchingAgentsOfAllClusters] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     getMatchingAgentsQuery(agentSelector),
   );
 
+  // TODO(mlibra): Following requires late-binding. So far every agent is assigned to a cluster, so breaking
+  // the concept of having a pool of unassigned Agnets to pick-up by Cluster Creator
+  // Use only those which are not reserved for other clusters
+  // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status)
+  const matchingAgents = (matchingAgentsOfAllClusters || []).filter(
+    (agent: CIM.AgentK8sResource) =>
+      !agent.spec?.clusterDeploymentName ||
+      (agent.spec.clusterDeploymentName.name === clusterDeploymentName &&
+        agent.spec.clusterDeploymentName.namespace === namespace),
+  );
+  console.log(
+    '--- matchingAgents: ',
+    matchingAgents,
+    ', matchingAgentsOfAllClusters: ',
+    matchingAgentsOfAllClusters,
+    ', query: ',
+    getMatchingAgentsQuery(agentSelector),
+  );
+  // Assuption: A location is mandatory and labels are use to just narrow the search.
+  // If that is not met, gather usedAgentlabels from allAgents instead of matchingAgents
+  const usedAgentlabels: string[] = React.useMemo(
+    () => getUsedAgentLabels(matchingAgents),
+    [matchingAgents],
+  );
+
+  // Since we keep maintaining the RESERVED_AGENT_LABEL_KEY, we can filter on it. Otherwise we would need to filter on agent.spec.clusterDeploymentName
   const [reservedAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     getReservedAgentsQuery(namespace, clusterDeployment?.metadata?.uid),
   );
@@ -317,7 +343,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         agentLocations={agentLocations}
         matchingAgents={matchingAgents}
         onAgentSelectorChange={onAgentSelectorChange}
-        allAgentsCount={allAgents?.length || 0}
+        // allAgentsCount={allAgents?.length || 0}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
