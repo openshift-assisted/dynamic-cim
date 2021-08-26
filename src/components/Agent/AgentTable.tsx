@@ -1,24 +1,12 @@
 import * as React from 'react';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
 import { CIM } from 'openshift-assisted-ui-lib';
-import { sortable, expandable } from '@patternfly/react-table';
-import { AgentKind } from '../../kind';
+import { AgentKind, ClusterDeploymentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { onEditHostAction, onEditRoleAction } from './actions';
 
-const { getAIHosts, HostsTable, LoadingState } = CIM;
-
-const getColumns = () => [
-  { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
-  { title: 'Role', transforms: [sortable] },
-  { title: 'Status', transforms: [sortable] },
-  { title: 'Discovered At', transforms: [sortable] },
-  { title: 'CPU Cores', transforms: [sortable] }, // cores per machine (sockets x cores)
-  { title: 'Memory', transforms: [sortable] },
-  { title: 'Disk', transforms: [sortable] },
-  { title: '' },
-];
+const { InfraEnvAgentTable, LoadingState } = CIM;
 
 type AgentTableProps = {
   obj: CIM.AgentK8sResource;
@@ -44,8 +32,6 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
     isList: true,
   });
   */
-
-  const restHosts = getAIHosts(agents);
 
   // TODO(mlibra): filter-out BMHs which have already Agents
   /*
@@ -74,21 +60,21 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
     return restBmh;
   });
   */
-  const mergedHosts = [...restHosts]; //, ...restBmhs];
+  const mergedAgents = [...agents]; //, ...restBmhs];
 
   return (
     <div className="co-m-pane__body">
       {loaded ? (
-        <HostsTable
-          hosts={mergedHosts}
-          EmptyState={() => <div>no hosts</div>}
-          columns={getColumns()}
+        <InfraEnvAgentTable
+          agents={mergedAgents}
           canEditHost={() => true}
           onEditHost={onEditHostAction(editHostModal, agentModel)}
           canEditRole={() => true}
           onEditRole={onEditRoleAction(agentModel)}
           className="agents-table"
-          AdditionalNTPSourcesDialogToggleComponent={CIM.AdditionalNTPSourcesDialogToggle}
+          getClusterDeploymentLink={({ name, namespace }) =>
+            `/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}`
+          }
         />
       ) : (
         <LoadingState />
