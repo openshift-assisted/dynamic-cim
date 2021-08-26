@@ -261,6 +261,11 @@ export const getOnSaveHostsSelection =
               path: `/metadata/labels`,
               value: newLabels,
             },
+            {
+              op: 'replace',
+              path: '/spec/clusterDeploymentName',
+              value: {}, // means: delete
+            },
           ]);
         }),
       );
@@ -284,6 +289,14 @@ export const getOnSaveHostsSelection =
                 op: agent.metadata.labels ? 'replace' : 'add',
                 path: '/metadata/labels',
                 value: newLabels,
+              },
+              {
+                op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
+                path: '/spec/clusterDeploymentName',
+                value: {
+                  name: clusterDeployment.metadata.name,
+                  namespace: clusterDeployment.metadata.namespace,
+                },
               },
             ]);
           }),
