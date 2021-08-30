@@ -2,7 +2,10 @@ import * as React from 'react';
 import _ from 'lodash';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import { Selector } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
+import {
+  MatchExpression,
+  Selector,
+} from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import {
@@ -32,6 +35,7 @@ const {
   getLocationsFormMatchExpressions,
   AGENT_LOCATION_LABEL_KEY,
   RESERVED_AGENT_LABEL_KEY,
+  AGENT_NOLOCATION_VALUE,
 } = CIM;
 
 type ClusterDeploymentWizardProps = {
@@ -54,25 +58,27 @@ const getUsedAgentLabels = (agents: CIM.AgentK8sResource[] = []): string[] =>
 const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocation[] => {
   const agentLocationsTemp = {};
   agents.forEach((agent) => {
-    const loc = agent.metadata?.labels?.[AGENT_LOCATION_LABEL_KEY];
-    if (loc) {
-      agentLocationsTemp[loc] = agentLocationsTemp[loc] || {
-        itemCount: 0,
-        // additional stats come here
-      };
-      agentLocationsTemp[loc].itemCount++;
-    }
+    const loc = agent.metadata?.labels?.[AGENT_LOCATION_LABEL_KEY] || AGENT_NOLOCATION_VALUE;
+
+    agentLocationsTemp[loc] = agentLocationsTemp[loc] || {
+      itemCount: 0,
+      // additional stats come here
+    };
+    agentLocationsTemp[loc].itemCount++;
   });
-  const agentLocations: CIM.AgentLocation[] = Object.keys(agentLocationsTemp).map((loc) => ({
-    value: loc,
-    ...agentLocationsTemp[loc],
-  }));
+  const agentLocations: CIM.AgentLocation[] = Object.keys(agentLocationsTemp).map(
+    (loc): CIM.AgentLocation => ({
+      value: loc,
+      displayName: loc === AGENT_NOLOCATION_VALUE ? 'No location' : loc,
+      ...agentLocationsTemp[loc],
+    }),
+  );
 
   return agentLocations;
 };
 
-// Assumption: The user is expected to enter location before querying
-const getMatchingAgentsQuery = (agentSelector?: CIM.AgentSelectorChageProps) =>
+const getMatchingAgentsQueries = (agentSelector?: CIM.AgentSelectorChageProps) => [
+  // Assumption: The user is requested to enter at least one location before query can start
   agentSelector?.locations?.length
     ? {
         kind: AgentKind,
@@ -83,7 +89,25 @@ const getMatchingAgentsQuery = (agentSelector?: CIM.AgentSelectorChageProps) =>
         },
         namespaced: true,
       }
-    : undefined;
+    : undefined,
+  agentSelector?.locations?.includes(AGENT_NOLOCATION_VALUE)
+    ? {
+        kind: AgentKind,
+        isList: true,
+        selector: {
+          matchLabels: parseStringLabels(agentSelector?.labels || []),
+          matchExpressions: [
+            {
+              key: AGENT_LOCATION_LABEL_KEY,
+              operator: 'DoesNotExist',
+              // values: [] as string[],
+            },
+          ] as MatchExpression[],
+        },
+        namespaced: true,
+      }
+    : undefined,
+];
 
 const getStoredAgentsQuery = (storedAgentSelector?: Selector) =>
   storedAgentSelector
@@ -210,15 +234,25 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   // const usedAgentlabels: string[] = React.useMemo(() => getUsedAgentLabels(allAgents), [allAgents]);
   const agentLocations = React.useMemo(() => getAgentLocations(allAgents), [allAgents]);
 
-  const [matchingAgentsOfAllClusters] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    getMatchingAgentsQuery(agentSelector),
+  const matchingAgentsQueries = getMatchingAgentsQueries(agentSelector);
+  const [matchingAgentsOfAllClustersLocSet] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    matchingAgentsQueries[0],
   );
+  const [matchingAgentsOfAllClustersNoLocSet] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    matchingAgentsQueries[1],
+  );
+  const matchingAgentsOfAllClusters = [
+    // workaround to missing "OR" operator in the k8s matchExpressions
+    ...(matchingAgentsOfAllClustersLocSet || []),
+    ...(matchingAgentsOfAllClustersNoLocSet || []),
+  ];
 
-  // TODO(mlibra): Following requires late-binding. So far every agent is assigned to a cluster, so breaking
-  // the concept of having a pool of unassigned Agnets to pick-up by Cluster Creator
-  // Use only those which are not reserved for other clusters
-  // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status)
-  const matchingAgents = (matchingAgentsOfAllClusters || []).filter(
+  // Use only those which are not reserved for anoother cluster.
+  // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status).
+  //
+  // TODO(mlibra): Following requires late-binding. Recently every agent is assigned to a cluster,
+  // so breaking the concept of having a pool of __unassigned__ Agents to pick-up by the Cluster Creator.
+  const matchingAgents = matchingAgentsOfAllClusters.filter(
     (agent: CIM.AgentK8sResource) =>
       !agent.spec?.clusterDeploymentName ||
       (agent.spec.clusterDeploymentName.name === clusterDeploymentName &&
@@ -229,9 +263,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     matchingAgents,
     ', matchingAgentsOfAllClusters: ',
     matchingAgentsOfAllClusters,
-    ', query: ',
-    getMatchingAgentsQuery(agentSelector),
+    ', 2 queries: ',
+    getMatchingAgentsQueries(agentSelector),
   );
+
   // Assuption: A location is mandatory and labels are use to just narrow the search.
   // If that is not met, gather usedAgentlabels from allAgents instead of matchingAgents
   const usedAgentlabels: string[] = React.useMemo(
