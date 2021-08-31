@@ -47,6 +47,7 @@ export const getAgentClusterInstall = ({
       provisionRequirements: {
         controlPlaneAgents,
       },
+      holdInstallation: true, // will be changed to false to trigger the installation start (at the Review step)
       imageSetRef: {
         name: ocpVersion, // 'openshift-v4.7.0',
       },
