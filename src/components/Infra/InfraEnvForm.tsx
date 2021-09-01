@@ -12,8 +12,13 @@ import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '..
 import '../styles.scss';
 import './infra.scss';
 
-const { InfraEnvFormPage, getClusterDeployment, getAgentClusterInstall, getInfraEnv, getSecret } =
-  CIM;
+const {
+  InfraEnvFormPage,
+  getClusterDeploymentForInfraEnv,
+  getAgentClusterInstall,
+  getInfraEnv,
+  getSecret,
+} = CIM;
 
 type InfraEnvWizardProps = {
   match: RMatch<{ ns: string }>;
@@ -36,7 +41,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
       const secret = await k8sCreate(secretModel, getSecret(namespace, values));
       const clusterDeployment = await k8sCreate(
         clusterDepModel,
-        getClusterDeployment(secret.metadata.name, namespace, values),
+        getClusterDeploymentForInfraEnv(secret.metadata.name, namespace, values),
       );
       await k8sCreate(
         agentClusterInstallModel,

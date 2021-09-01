@@ -18,7 +18,6 @@ import {
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
 import EditHostModal from '../modals/EditHostModal';
 import { onEditHostAction, onEditRoleAction } from '../Agent/actions';
-import { getAgentLocationMatchExpression } from './utils';
 import {
   getOnClose,
   getOnClusterCreate,
@@ -32,8 +31,9 @@ const {
   ClusterDeploymentWizard: AIClusterDeploymentWizard,
   LoadingState,
   parseStringLabels,
-  labelsToArray,
-  getLocationsFormMatchExpressions,
+  getClusterDeploymentAgentReservedValue,
+  getAgentSelectorFieldsFromAnnotations,
+  getAgentLocationMatchExpression,
   AGENT_LOCATION_LABEL_KEY,
   RESERVED_AGENT_LABEL_KEY,
   AGENT_NOLOCATION_VALUE,
@@ -78,7 +78,7 @@ const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocati
   return agentLocations;
 };
 
-const getMatchingAgentsQueries = (agentSelector?: CIM.AgentSelectorChageProps) => [
+const getMatchingAgentsQueries = (agentSelector?: CIM.AgentSelectorChangeProps) => [
   // Assumption: The user is requested to enter at least one location before query can start
   agentSelector?.locations?.length
     ? {
@@ -142,14 +142,17 @@ const getClusterDeploymentQuery = (namespace: string, clusterDeploymentName?: st
       }
     : undefined;
 
-const getReservedAgentsQuery = (namespace: string, clusterDeploymentUID?: string) =>
-  clusterDeploymentUID
+const getReservedAgentsQuery = (clusterDeployment?: CIM.ClusterDeploymentK8sResource) =>
+  clusterDeployment?.metadata?.name
     ? {
         kind: AgentKind,
         isList: true,
         selector: {
           matchLabels: {
-            [RESERVED_AGENT_LABEL_KEY]: clusterDeploymentUID,
+            [RESERVED_AGENT_LABEL_KEY]: getClusterDeploymentAgentReservedValue(
+              clusterDeployment.metadata.namespace,
+              clusterDeployment.metadata.name,
+            ),
           },
         },
         namespaced: true,
@@ -167,9 +170,8 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const [agentModel] = useK8sModel(AgentKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
 
-  // TODO(mlibra): set it empty to stop watching resources when not needed (i.e. when transitioning??)
   // Unsaved labels entered by the user on the Hosts Selection step
-  const [agentSelector, setAgentSelector] = React.useState<CIM.AgentSelectorChageProps>();
+  const [agentSelector, setAgentSelector] = React.useState<CIM.AgentSelectorChangeProps>();
 
   const { editHostModal } = useModalDialogsContext();
   const [clusterDeploymentName, setClusterDeploymentName] = React.useState<string>();
@@ -207,23 +209,25 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     [clusterDeployments, clusterDeployment],
   );
 
+  // agents (or ~ storedAgentSelector) conform all agents assigned to the cluster (already selected by the user)
   const storedAgentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
   const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     getStoredAgentsQuery(storedAgentSelector),
   );
 
   // Initialize the first read of matchingAgents
+  // User's selection of labels and locations are persisted into CD's annotations instead of the agentSelector which contains [RESERVED_AGENT_LABEL_KEY] only
   React.useEffect(() => {
-    if (storedAgentSelector) {
-      const filteredLabels = { ...(storedAgentSelector.matchLabels || {}) };
-      delete filteredLabels[RESERVED_AGENT_LABEL_KEY];
-      setAgentSelector({
-        labels: labelsToArray(filteredLabels),
-        locations: getLocationsFormMatchExpressions(storedAgentSelector.matchExpressions),
-      });
+    const agentSelectorFromAnnotations = getAgentSelectorFieldsFromAnnotations(
+      clusterDeployment?.metadata?.annotations,
+    );
+
+    if (agentSelectorFromAnnotations) {
+      console.log('-- setting agentSelectorFromAnnotations: ', agentSelectorFromAnnotations);
+      setAgentSelector(agentSelectorFromAnnotations);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storedAgentSelector]);
+  }, [clusterDeployment?.metadata?.annotations]);
 
   // So far for agent-selector autosuggestion only. Quite an expensive operation considering how little info we need...
   const [allAgents, , allAgentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
@@ -249,7 +253,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     ...(matchingAgentsOfAllClustersNoLocSet || []),
   ];
 
-  // Use only those which are not reserved for anoother cluster.
+  // Use only those which are not reserved for another cluster.
   // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status).
   //
   // TODO(mlibra): Following requires late-binding. Recently every agent is assigned to a cluster,
@@ -259,14 +263,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
       !agent.spec?.clusterDeploymentName ||
       (agent.spec.clusterDeploymentName.name === clusterDeploymentName &&
         agent.spec.clusterDeploymentName.namespace === namespace),
-  );
-  console.log(
-    '--- matchingAgents: ',
-    matchingAgents,
-    ', matchingAgentsOfAllClusters: ',
-    matchingAgentsOfAllClusters,
-    ', 2 queries: ',
-    getMatchingAgentsQueries(agentSelector),
   );
 
   // Assuption: A location is mandatory and labels are use to just narrow the search.
@@ -278,12 +274,13 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   // Since we keep maintaining the RESERVED_AGENT_LABEL_KEY, we can filter on it. Otherwise we would need to filter on agent.spec.clusterDeploymentName
   const [reservedAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    getReservedAgentsQuery(namespace, clusterDeployment?.metadata?.uid),
+    getReservedAgentsQuery(clusterDeployment),
   );
+  // TODO(mlibra): Reasons for maintaining list of IDs are gone. We can start using directly reservedAgents instead.
   const selectedHostIds: string[] = reservedAgents?.map((agent) => agent.metadata.uid) || [];
 
   const onAgentSelectorChange = React.useCallback(
-    (props: CIM.AgentSelectorChageProps) => setAgentSelector(props),
+    (props: CIM.AgentSelectorChangeProps) => setAgentSelector(props),
     [setAgentSelector],
   );
 
@@ -336,9 +333,10 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         clusterDeployment,
         oldReservedAgents: reservedAgents,
         agentModel,
+        clusterDeploymentModel,
         matchingAgents,
       }),
-    [clusterDeployment, reservedAgents, agentModel, matchingAgents],
+    [clusterDeployment, reservedAgents, agentModel, matchingAgents, clusterDeploymentModel],
   );
 
   const hostActions = {
@@ -369,16 +367,15 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         clusterImages={clusterImageSets}
         clusterDeployment={clusterDeployment}
         agentClusterInstall={agentClusterInstall}
-        agents={agents}
         hostActions={hostActions}
         selectedHostIds={selectedHostIds}
         pullSecretSet
         usedClusterNames={usedClusterNames}
         usedAgentLabels={usedAgentlabels}
         agentLocations={agentLocations}
+        agents={agents}
         matchingAgents={matchingAgents}
         onAgentSelectorChange={onAgentSelectorChange}
-        // allAgentsCount={allAgents?.length || 0}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
