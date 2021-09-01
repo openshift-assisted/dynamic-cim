@@ -12,7 +12,6 @@ import {
   Stack,
   StackItem,
 } from '@patternfly/react-core';
-import { sortable, expandable } from '@patternfly/react-table';
 import {
   DetailsPage,
   K8sKind,
@@ -33,7 +32,7 @@ const {
   getClusterValidatedCondition,
   ValidatedConditionAlert,
   ClusterProgress,
-  HostsTable,
+  AgentTable,
   LoadingState,
   ClusterPropertiesList,
   ClusterInstallationError,
@@ -60,17 +59,6 @@ const getClusterDeploymentActions =
       },
     ];
   };
-
-const columns = [
-  { title: 'Hostname', transforms: [sortable], cellFormatters: [expandable] },
-  { title: 'Role', transforms: [sortable] },
-  { title: 'Status', transforms: [sortable] },
-  { title: 'Discovered At', transforms: [sortable] },
-  { title: 'CPU Cores', transforms: [sortable] }, // cores per machine (sockets x cores)
-  { title: 'Memory', transforms: [sortable] },
-  { title: 'Disk', transforms: [sortable] },
-  { title: '' },
-];
 
 export const ClusterDetail = (props: DetailsTabProps) => {
   const { obj: clusterDeployment } = props;
@@ -259,13 +247,7 @@ export const ClusterDetail = (props: DetailsTabProps) => {
             </CardHeader>
             <CardExpandableContent>
               <CardBody>
-                <HostsTable
-                  hosts={cluster.hosts}
-                  EmptyState={() => <div>empty</div>}
-                  columns={columns}
-                  className="agents-table"
-                  AdditionalNTPSourcesDialogToggleComponent={CIM.AdditionalNTPSourcesDialogToggle}
-                />
+                <AgentTable agents={agents} className="agents-table" />{' '}
               </CardBody>
             </CardExpandableContent>
           </Card>
