@@ -2,15 +2,14 @@ import { k8sCreate, k8sPatch, K8sKind } from '@openshift-console/dynamic-plugin-
 import { CIM } from 'openshift-assisted-ui-lib';
 import { RouteComponentProps } from 'react-router';
 import { ClusterDeploymentKind } from '../../kind';
-import {
-  appendPatch,
-  getClusterDeployment,
-  getPullSecretResource,
-  getAgentClusterInstall,
-} from '../../k8s';
-import { getAgentLocationMatchExpression } from './utils';
+import { appendPatch, getPullSecretResource, getAgentClusterInstall } from '../../k8s';
 
-const { RESERVED_AGENT_LABEL_KEY, parseStringLabels } = CIM;
+const {
+  RESERVED_AGENT_LABEL_KEY,
+  getAnnotationsFromAgentSelector,
+  getClusterDeploymentResource,
+  getClusterDeploymentAgentReservedValue,
+} = CIM;
 
 type getOnClusterCreateParams = {
   secretModel: K8sKind;
@@ -19,6 +18,7 @@ type getOnClusterCreateParams = {
   namespace: string;
   setClusterDeploymentName: (name: string) => void;
 };
+
 export const getOnClusterCreate =
   ({
     secretModel,
@@ -30,7 +30,7 @@ export const getOnClusterCreate =
   async ({ pullSecret, openshiftVersion, ...params }: CIM.ClusterDeploymentDetailsValues) => {
     try {
       const { name } = params;
-      const labels = undefined; // will be set later (Hosts Selection)
+      const annotations = undefined; // will be set later (Hosts Selection)
 
       const secret = await k8sCreate(
         secretModel,
@@ -39,7 +39,7 @@ export const getOnClusterCreate =
       const pullSecretName = secret?.metadata?.name;
       const createdClusterDeployment = await k8sCreate(
         clusterDeploymentModel,
-        getClusterDeployment({ namespace, labels, pullSecretName, ...params }),
+        getClusterDeploymentResource({ namespace, annotations, pullSecretName, ...params }),
       );
 
       // keep watching the newly created resource from now on
@@ -61,8 +61,6 @@ export const getOnClusterCreate =
       throw `Failed to cretate the ClusterDeployment or agentClusterInstall resource: ${e.message}`;
     }
   };
-
-// [namespace, agentClusterInstallModel, secretModel, clusterDeploymentModel],
 
 type getOnClusterDetailsUpdateParams = {
   agentClusterInstall: CIM.AgentClusterInstallK8sResource;
@@ -118,7 +116,6 @@ export const getOnClusterDetailsUpdate =
       throw `Failed to patch the ClusterDeployment or AgentClusterInstall resource: ${e.message}`;
     }
   };
-//  [agentClusterInstall, clusterDeployment, agentClusterInstallModel, clusterDeploymentModel],
 
 type getOnSaveDetailsParams = {
   clusterDeploymentName?: string;
@@ -136,7 +133,6 @@ export const getOnSaveDetails =
       await onClusterCreate(values);
     }
   };
-//  [onClusterCreate, onClusterDetailsUpdate, clusterDeploymentName],
 
 type getOnSaveNetworkingParams = {
   agentClusterInstall: CIM.AgentClusterInstallK8sResource;
@@ -208,11 +204,11 @@ export const getOnSaveNetworking =
       throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
     }
   };
-//  [agentClusterInstall, agentClusterInstallModel],
 
 type getOnSaveHostsSelectionParams = {
   clusterDeployment: CIM.ClusterDeploymentK8sResource;
   agentModel: K8sKind;
+  clusterDeploymentModel: K8sKind;
   matchingAgents: CIM.AgentK8sResource[];
   oldReservedAgents: CIM.AgentK8sResource;
 };
@@ -220,6 +216,7 @@ type getOnSaveHostsSelectionParams = {
 export const getOnSaveHostsSelection =
   ({
     clusterDeployment,
+    clusterDeploymentModel,
     agentModel,
     matchingAgents,
     oldReservedAgents,
@@ -228,18 +225,13 @@ export const getOnSaveHostsSelection =
     try {
       console.log('--- onSaveHostsSelection, values: ', values);
 
-      const clusterDeploymentPatches = [];
-
       // TODO(mlibra) To save:
-      // - agentSelector (labels + locations)
       // - useMastersAsWorkers
-      // - locations - use set-based matchExpressions in agentSelectors??
-      const agentLabels = parseStringLabels(values.agentLabels);
 
-      // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
-      const matchExpressions = getAgentLocationMatchExpression(values.locations);
-
-      const reservedAgentlabelValue = clusterDeployment.metadata.uid;
+      const reservedAgentlabelValue = getClusterDeploymentAgentReservedValue(
+        clusterDeployment.metadata.namespace,
+        clusterDeployment.metadata.name,
+      );
 
       // remove RESERVED_AGENT_LABEL_KEY from de-selected ones
       const releasedAgents = oldReservedAgents.filter(
@@ -302,42 +294,32 @@ export const getOnSaveHostsSelection =
           }),
       );
 
-      // include in the agentSelector of CD
-      agentLabels[RESERVED_AGENT_LABEL_KEY] = reservedAgentlabelValue;
-
       // TODO(mlibra): check for errors in the releasedResults and reservedResults
       console.log('--- releaseResults (TODO): ', releaseResults);
       console.log('--- reservedResults (TODO): ', reservedResults);
 
+      // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
+      // const matchExpressions = getAgentLocationMatchExpression(values.locations);
+
+      const clusterDeploymentPatches = [];
       appendPatch(
         clusterDeploymentPatches,
-        '/spec/platform/agentBareMetal/agentSelector/matchLabels',
-        agentLabels,
-        clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchLabels,
+        '/metadata/annotations',
+        getAnnotationsFromAgentSelector(
+          clusterDeployment.metadata.annotations,
+          values.agentLabels,
+          values.locations,
+        ),
+        clusterDeployment.metadata.annotations,
       );
-      if (matchExpressions?.length) {
-        appendPatch(
-          clusterDeploymentPatches,
-          '/spec/platform/agentBareMetal/agentSelector/matchExpressions',
-          matchExpressions,
-          clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector?.matchExpressions,
-        );
-      }
-      console.log(
-        '--- Following patches were skipped due to missing late binding: ',
-        clusterDeploymentPatches,
-      );
-      /* TODO(mlibra): This will not work, requires late binding
-           https://issues.redhat.com/browse/MGMT-4968
+
       if (clusterDeploymentPatches.length > 0) {
         await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
       }
-      */
     } catch (e) {
-      throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
+      throw `Failed to patch resources: ${e.message}`;
     }
   };
-//  [clusterDeployment, clusterDeploymentModel],
 
 type getOnCloseParams = {
   namespace: string;
