@@ -1,6 +1,5 @@
 import * as React from 'react';
 import _ from 'lodash';
-import { useTranslation } from 'react-i18next';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
 import {
@@ -164,7 +163,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   namespace,
   queriedClusterDeploymentName,
 }) => {
-  const { t } = useTranslation();
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
   const [agentModel] = useK8sModel(AgentKind);
