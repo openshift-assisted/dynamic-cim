@@ -331,9 +331,12 @@ export const getOnClose =
   ({ namespace, history, clusterDeployment }: getOnCloseParams) =>
   async () => {
     const ns = namespace ? `ns/${namespace}` : 'all-namespaces';
-    // List page
-    // history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
 
-    // Details page
-    history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata.name}`);
+    if (clusterDeployment?.metadata?.name) {
+      // Details page
+      history.push(`/k8s/${ns}/${ClusterDeploymentKind}/${clusterDeployment.metadata.name}`);
+    } else {
+      // List page
+      history.push(`/k8s/${ns}/${ClusterDeploymentKind}`);
+    }
   };
