@@ -253,12 +253,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 
   // Use only those which are not reserved for another cluster.
   // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status).
-  //
-  // TODO(mlibra): Following requires late-binding. Recently every agent is assigned to a cluster,
-  // so breaking the concept of having a pool of __unassigned__ Agents to pick-up by the Cluster Creator.
   const matchingAgents = matchingAgentsOfAllClusters.filter(
     (agent: CIM.AgentK8sResource) =>
-      !agent.spec?.clusterDeploymentName ||
+      !agent.spec?.clusterDeploymentName?.name ||
       (agent.spec.clusterDeploymentName.name === clusterDeploymentName &&
         agent.spec.clusterDeploymentName.namespace === namespace),
   );
