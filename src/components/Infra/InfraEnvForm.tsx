@@ -38,6 +38,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const usedNames = infraEnvs.map((env) => env.metadata?.name).filter(Boolean) as string[];
   const onSubmit = React.useCallback(
     async (values) => {
+      // TODO(mlibra): Secret, clusterDeployment and agentClusterinstall should removed from here once we have Late Binding
       const secret = await k8sCreate(secretModel, getSecret(namespace, values));
       const clusterDeployment = await k8sCreate(
         clusterDepModel,
@@ -45,9 +46,12 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
       );
       await k8sCreate(
         agentClusterInstallModel,
-        getAgentClusterInstall(clusterDeployment.metadata.name, namespace, values),
+        getAgentClusterInstall({
+          clusterDeploymentName: clusterDeployment.metadata.name,
+          namespace,
+          values,
+        }),
       );
-
       return k8sCreate(infraModel, getInfraEnv(namespace, values));
     },
     [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
