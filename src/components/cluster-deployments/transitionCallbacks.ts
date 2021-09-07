@@ -209,8 +209,7 @@ type getOnSaveHostsSelectionParams = {
   clusterDeployment: CIM.ClusterDeploymentK8sResource;
   agentModel: K8sKind;
   clusterDeploymentModel: K8sKind;
-  matchingAgents: CIM.AgentK8sResource[];
-  oldReservedAgents: CIM.AgentK8sResource;
+  agents: CIM.AgentK8sResource[];
 };
 
 export const getOnSaveHostsSelection =
@@ -218,13 +217,10 @@ export const getOnSaveHostsSelection =
     clusterDeployment,
     clusterDeploymentModel,
     agentModel,
-    matchingAgents,
-    oldReservedAgents,
+    agents,
   }: getOnSaveHostsSelectionParams) =>
   async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
     try {
-      console.log('--- onSaveHostsSelection, values: ', values);
-
       // TODO(mlibra) To save:
       // - useMastersAsWorkers
 
@@ -233,17 +229,16 @@ export const getOnSaveHostsSelection =
         clusterDeployment.metadata.name,
       );
 
-      // remove RESERVED_AGENT_LABEL_KEY from de-selected ones
-      const releasedAgents = oldReservedAgents.filter(
-        // agent was either deselected or not visible in the latest user's matchingLabel selection
-        (agent) =>
-          !values.selectedHostIds.includes(agent.metadata.uid) ||
-          !matchingAgents.find(
-            (matchingAgent: CIM.AgentK8sResource) =>
-              matchingAgent.metadata.uid === agent.metadata.uid,
-          ),
+      const hostIds = values.autoSelectHosts ? values.autoSelectedHostIds : values.selectedHostIds;
+      const releasedAgents = agents.filter(
+        (a) =>
+          !hostIds.includes(a.metadata.uid) &&
+          (Object.hasOwnProperty.call(a.metadata.labels || {}, RESERVED_AGENT_LABEL_KEY)
+            ? a.metadata.labels[RESERVED_AGENT_LABEL_KEY] === reservedAgentlabelValue
+            : false),
       );
-      const releaseResults = await Promise.all(
+
+      await Promise.all(
         releasedAgents.map((agent) => {
           const newLabels = { ...agent.metadata.labels };
           delete newLabels[RESERVED_AGENT_LABEL_KEY];
@@ -263,41 +258,34 @@ export const getOnSaveHostsSelection =
       );
 
       // add RESERVED_AGENT_LABEL_KEY to the newly selected agents
-      const newAgentIds = values.selectedHostIds.filter(
-        (agentId) => !oldReservedAgents.find((agent) => agent.metadata.uid === agentId),
+      const addAgents = agents.filter(
+        (a) =>
+          hostIds.includes(a.metadata.uid) &&
+          !Object.hasOwnProperty.call(a.metadata.labels, RESERVED_AGENT_LABEL_KEY),
       );
-      const reservedResults = await Promise.all(
-        newAgentIds
-          .map((agentId) =>
-            matchingAgents.find((agent: CIM.AgentK8sResource) => agent.metadata.uid === agentId),
-          )
-          // why filter()? The user can change labels after making a host-selection and than continue. Take selection of just those "visible ones".
-          .filter(Boolean)
-          .map((agent) => {
-            const newLabels = { ...(agent.metadata.labels || {}) };
-            newLabels[RESERVED_AGENT_LABEL_KEY] = reservedAgentlabelValue;
-            return k8sPatch(agentModel, agent, [
-              {
-                op: agent.metadata.labels ? 'replace' : 'add',
-                path: '/metadata/labels',
-                value: newLabels,
+      await Promise.all(
+        addAgents.map((agent) => {
+          const newLabels = { ...(agent.metadata.labels || {}) };
+          newLabels[RESERVED_AGENT_LABEL_KEY] = reservedAgentlabelValue;
+          return k8sPatch(agentModel, agent, [
+            {
+              op: agent.metadata.labels ? 'replace' : 'add',
+              path: '/metadata/labels',
+              value: newLabels,
+            },
+            {
+              op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
+              path: '/spec/clusterDeploymentName',
+              value: {
+                name: clusterDeployment.metadata.name,
+                namespace: clusterDeployment.metadata.namespace,
               },
-              {
-                op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
-                path: '/spec/clusterDeploymentName',
-                value: {
-                  name: clusterDeployment.metadata.name,
-                  namespace: clusterDeployment.metadata.namespace,
-                },
-              },
-            ]);
-          }),
+            },
+          ]);
+        }),
       );
 
       // TODO(mlibra): check for errors in the releasedResults and reservedResults
-      console.log('--- releaseResults (TODO): ', releaseResults);
-      console.log('--- reservedResults (TODO): ', reservedResults);
-
       // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
       // const matchExpressions = getAgentLocationMatchExpression(values.locations);
 
@@ -305,11 +293,7 @@ export const getOnSaveHostsSelection =
       appendPatch(
         clusterDeploymentPatches,
         '/metadata/annotations',
-        getAnnotationsFromAgentSelector(
-          clusterDeployment.metadata.annotations,
-          values.agentLabels,
-          values.locations,
-        ),
+        getAnnotationsFromAgentSelector(clusterDeployment, values),
         clusterDeployment.metadata.annotations,
       );
 

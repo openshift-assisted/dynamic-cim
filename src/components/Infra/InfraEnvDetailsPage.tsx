@@ -8,7 +8,6 @@ import {
   useModalDialogsContext,
   ModalDialogsContextType,
   DownloadIsoModal,
-  AddBmcModal,
 } from '../modals';
 import InfraDetailsTab from './InfraDetailsTab';
 import { InfraEnvKind } from '../../kind';
@@ -36,20 +35,10 @@ const addHostAction =
     };
   };
 
-const addBmcAction =
-  (open: ModalDialogsContextType['addBmcDialog']['open']): CIM.KebabAction =>
-  () => {
-    return {
-      label: 'Add BMC',
-      hidden: false,
-      callback: () => open({}),
-    };
-  };
-
 const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...rest }) => {
-  const { downloadIsoDialog, addBmcDialog } = useModalDialogsContext();
+  const { downloadIsoDialog } = useModalDialogsContext();
 
-  const menuActions = [addHostAction(downloadIsoDialog.open), addBmcAction(addBmcDialog.open)];
+  const menuActions = [addHostAction(downloadIsoDialog.open)];
   return (
     <>
       <DetailsPage
@@ -74,7 +63,6 @@ const InfraEnvDetails: React.FC<InfraEnvDetailsProps> = ({ name, namespace, ...r
         ]}
       />
       <DownloadIsoModal />
-      <AddBmcModal namespace={namespace} />
     </>
   );
 };

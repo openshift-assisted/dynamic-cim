@@ -1,11 +1,6 @@
 import * as React from 'react';
-import _ from 'lodash';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import {
-  MatchExpression,
-  Selector,
-} from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import {
@@ -26,17 +21,7 @@ import {
   getOnSaveNetworking,
 } from './transitionCallbacks';
 
-const {
-  ClusterDeploymentWizard: AIClusterDeploymentWizard,
-  LoadingState,
-  parseStringLabels,
-  getClusterDeploymentAgentReservedValue,
-  getAgentSelectorFieldsFromAnnotations,
-  getAgentLocationMatchExpression,
-  AGENT_LOCATION_LABEL_KEY,
-  RESERVED_AGENT_LABEL_KEY,
-  AGENT_NOLOCATION_VALUE,
-} = CIM;
+const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -51,73 +36,6 @@ const getUsedClusterNames = (
   clusterDeployments
     .filter((cd) => current?.metadata?.uid !== cd.metadata.uid)
     .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`);
-
-const getUsedAgentLabels = (agents: CIM.AgentK8sResource[] = []): string[] =>
-  _.uniq(_.flatten(agents.map((agent) => Object.keys(agent.metadata.labels || {}))));
-
-const getAgentLocations = (agents: CIM.AgentK8sResource[] = []): CIM.AgentLocation[] => {
-  const agentLocationsTemp = {};
-  agents.forEach((agent) => {
-    const loc = agent.metadata?.labels?.[AGENT_LOCATION_LABEL_KEY] || AGENT_NOLOCATION_VALUE;
-
-    agentLocationsTemp[loc] = agentLocationsTemp[loc] || {
-      itemCount: 0,
-      // additional stats come here
-    };
-    agentLocationsTemp[loc].itemCount++;
-  });
-  const agentLocations: CIM.AgentLocation[] = Object.keys(agentLocationsTemp).map(
-    (loc): CIM.AgentLocation => ({
-      value: loc,
-      displayName: loc === AGENT_NOLOCATION_VALUE ? 'No location' : loc,
-      ...agentLocationsTemp[loc],
-    }),
-  );
-
-  return agentLocations;
-};
-
-const getMatchingAgentsQueries = (agentSelector?: CIM.AgentSelectorChangeProps) => [
-  // Assumption: The user is requested to enter at least one location before query can start
-  agentSelector?.locations?.length
-    ? {
-        kind: AgentKind,
-        isList: true,
-        selector: {
-          matchLabels: parseStringLabels(agentSelector?.labels || []),
-          matchExpressions: getAgentLocationMatchExpression(agentSelector.locations),
-        },
-        namespaced: true,
-      }
-    : undefined,
-  agentSelector?.locations?.includes(AGENT_NOLOCATION_VALUE)
-    ? {
-        kind: AgentKind,
-        isList: true,
-        selector: {
-          matchLabels: parseStringLabels(agentSelector?.labels || []),
-          matchExpressions: [
-            {
-              key: AGENT_LOCATION_LABEL_KEY,
-              operator: 'DoesNotExist',
-              // values: [] as string[],
-            },
-          ] as MatchExpression[],
-        },
-        namespaced: true,
-      }
-    : undefined,
-];
-
-const getStoredAgentsQuery = (storedAgentSelector?: Selector) =>
-  storedAgentSelector
-    ? {
-        kind: AgentKind,
-        isList: true,
-        selector: storedAgentSelector,
-        namespaced: true,
-      }
-    : undefined;
 
 const getAgentClusterInstallQuery = (namespace: string, clusterInstallRefName?: string) =>
   clusterInstallRefName
@@ -141,23 +59,6 @@ const getClusterDeploymentQuery = (namespace: string, clusterDeploymentName?: st
       }
     : undefined;
 
-const getReservedAgentsQuery = (clusterDeployment?: CIM.ClusterDeploymentK8sResource) =>
-  clusterDeployment?.metadata?.name
-    ? {
-        kind: AgentKind,
-        isList: true,
-        selector: {
-          matchLabels: {
-            [RESERVED_AGENT_LABEL_KEY]: getClusterDeploymentAgentReservedValue(
-              clusterDeployment.metadata.namespace,
-              clusterDeployment.metadata.name,
-            ),
-          },
-        },
-        namespaced: true,
-      }
-    : undefined;
-
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
   namespace,
@@ -167,9 +68,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
   const [agentModel] = useK8sModel(AgentKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
-
-  // Unsaved labels entered by the user on the Hosts Selection step
-  const [agentSelector, setAgentSelector] = React.useState<CIM.AgentSelectorChangeProps>();
 
   const { editHostModal } = useModalDialogsContext();
   const [clusterDeploymentName, setClusterDeploymentName] = React.useState<string>();
@@ -188,8 +86,6 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     getAgentClusterInstallQuery(namespace, clusterDeployment?.spec?.clusterInstallRef?.name),
   );
 
-  const defaultPullSecret = ''; // Can be retrieved from c.rh.c . We can not query that here.
-
   const [clusterImageSets, loading] = useK8sWatchResource<K8sResourceCommon[]>({
     kind: ClusterImageSetKind,
     namespaced: false,
@@ -206,78 +102,11 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     () => getUsedClusterNames(clusterDeployment, clusterDeployments),
     [clusterDeployments, clusterDeployment],
   );
-
-  // agents (or ~ storedAgentSelector) conform all agents assigned to the cluster (already selected by the user)
-  const storedAgentSelector = clusterDeployment?.spec?.platform?.agentBareMetal?.agentSelector;
-  const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    getStoredAgentsQuery(storedAgentSelector),
-  );
-
-  // Initialize the first read of matchingAgents
-  // User's selection of labels and locations are persisted into CD's annotations instead of the agentSelector which contains [RESERVED_AGENT_LABEL_KEY] only
-  React.useEffect(() => {
-    const agentSelectorFromAnnotations = getAgentSelectorFieldsFromAnnotations(
-      clusterDeployment?.metadata?.annotations,
-    );
-
-    if (agentSelectorFromAnnotations) {
-      console.log('-- setting agentSelectorFromAnnotations: ', agentSelectorFromAnnotations);
-      setAgentSelector(agentSelectorFromAnnotations);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clusterDeployment?.metadata?.annotations]);
-
-  // So far for agent-selector autosuggestion only. Quite an expensive operation considering how little info we need...
-  const [allAgents, , allAgentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
+  const [agents, , agentsError] = useK8sWatchResource<CIM.AgentK8sResource[]>({
     kind: AgentKind,
     isList: true,
-    // TODO(mlibra): Do we want an all-namespaces query for admins instead??
     namespaced: true,
-    namespace,
   });
-  // const usedAgentlabels: string[] = React.useMemo(() => getUsedAgentLabels(allAgents), [allAgents]);
-  const agentLocations = React.useMemo(() => getAgentLocations(allAgents), [allAgents]);
-
-  const matchingAgentsQueries = getMatchingAgentsQueries(agentSelector);
-  const [matchingAgentsOfAllClustersLocSet] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    matchingAgentsQueries[0],
-  );
-  const [matchingAgentsOfAllClustersNoLocSet] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    matchingAgentsQueries[1],
-  );
-  const matchingAgentsOfAllClusters = [
-    // workaround to missing "OR" operator in the k8s matchExpressions
-    ...(matchingAgentsOfAllClustersLocSet || []),
-    ...(matchingAgentsOfAllClustersNoLocSet || []),
-  ];
-
-  // Use only those which are not reserved for another cluster.
-  // Use agents of all statuses - filtering will be done later (i.e. for Ready-only status).
-  const matchingAgents = matchingAgentsOfAllClusters.filter(
-    (agent: CIM.AgentK8sResource) =>
-      !agent.spec?.clusterDeploymentName?.name ||
-      (agent.spec.clusterDeploymentName.name === clusterDeploymentName &&
-        agent.spec.clusterDeploymentName.namespace === namespace),
-  );
-
-  // Assuption: A location is mandatory and labels are use to just narrow the search.
-  // If that is not met, gather usedAgentlabels from allAgents instead of matchingAgents
-  const usedAgentlabels: string[] = React.useMemo(
-    () => getUsedAgentLabels(matchingAgents),
-    [matchingAgents],
-  );
-
-  // Since we keep maintaining the RESERVED_AGENT_LABEL_KEY, we can filter on it. Otherwise we would need to filter on agent.spec.clusterDeploymentName
-  const [reservedAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
-    getReservedAgentsQuery(clusterDeployment),
-  );
-  // TODO(mlibra): Reasons for maintaining list of IDs are gone. We can start using directly reservedAgents instead.
-  const selectedHostIds: string[] = reservedAgents?.map((agent) => agent.metadata.uid) || [];
-
-  const onAgentSelectorChange = React.useCallback(
-    (props: CIM.AgentSelectorChangeProps) => setAgentSelector(props),
-    [setAgentSelector],
-  );
 
   const onClose = React.useMemo(
     () => getOnClose({ namespace, history, clusterDeployment }),
@@ -326,12 +155,11 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     () =>
       getOnSaveHostsSelection({
         clusterDeployment,
-        oldReservedAgents: reservedAgents,
         agentModel,
         clusterDeploymentModel,
-        matchingAgents,
+        agents,
       }),
-    [clusterDeployment, reservedAgents, agentModel, matchingAgents, clusterDeploymentModel],
+    [clusterDeployment, agents, agentModel, clusterDeploymentModel],
   );
 
   const hostActions = {
@@ -348,7 +176,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     return <LoadingState />;
   }
 
-  if (clusterDeploymentError || agentsError || allAgentsError) {
+  if (clusterDeploymentError || agentsError) {
     // TODO(mlibra): Render error state instead
     throw new Error(agentsError);
   }
@@ -358,19 +186,12 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     <>
       <AIClusterDeploymentWizard
         className="cluster-deployment-wizard agent-table"
-        defaultPullSecret={defaultPullSecret}
         clusterImages={clusterImageSets}
         clusterDeployment={clusterDeployment}
         agentClusterInstall={agentClusterInstall}
         hostActions={hostActions}
-        selectedHostIds={selectedHostIds}
-        pullSecretSet
         usedClusterNames={usedClusterNames}
-        usedAgentLabels={usedAgentlabels}
-        agentLocations={agentLocations}
         agents={agents}
-        matchingAgents={matchingAgents}
-        onAgentSelectorChange={onAgentSelectorChange}
         onClose={onClose}
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
