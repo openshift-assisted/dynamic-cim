@@ -7,7 +7,7 @@ const {
   actions: { openDialog: openDialogAction, closeDialog: closeDialogAction },
 } = CIM.Reducers.dialogsSlice;
 
-type DialogId = 'downloadIsoDialog' | 'addBmcDialog' | 'editHostModal';
+type DialogId = 'downloadIsoDialog' | 'editHostModal';
 
 type DownloadIsoDialogProps = {
   fileName: string;
@@ -37,7 +37,7 @@ export type ModalDialogsContextType = {
   };
 };
 
-const dialogIds: DialogId[] = ['downloadIsoDialog', 'addBmcDialog', 'editHostModal'];
+const dialogIds: DialogId[] = ['downloadIsoDialog', 'editHostModal'];
 
 const ModalDialogsContext = React.createContext<ModalDialogsContextType | undefined>(undefined);
 
