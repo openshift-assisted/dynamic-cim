@@ -196,6 +196,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
         onSaveDetails={onSaveDetails}
         onSaveNetworking={onSaveNetworking}
         onSaveHostsSelection={onSaveHostsSelection}
+        onFinish={() => {
+          console.log('TODO');
+        }}
       />
       <EditHostModal />
     </>

@@ -76,6 +76,8 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           getClusterDeploymentLink={({ name, namespace }) =>
             `/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}`
           }
+          bareMetalHosts={[]}
+          infraEnv={obj}
         />
       ) : (
         <LoadingState />

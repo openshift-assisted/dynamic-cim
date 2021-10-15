@@ -81,6 +81,9 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
         agents={agents}
         fetchSecret={fetchSecret}
         agentTableClassName="agents-table"
+        onFetchEvents={async () => {
+          console.log('TODO');
+        }}
       />
     </div>
   );

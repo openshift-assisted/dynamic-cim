@@ -4,12 +4,7 @@ import { RouteComponentProps } from 'react-router';
 import { ClusterDeploymentKind } from '../../kind';
 import { appendPatch, getPullSecretResource, getAgentClusterInstall } from '../../k8s';
 
-const {
-  RESERVED_AGENT_LABEL_KEY,
-  getAnnotationsFromAgentSelector,
-  getClusterDeploymentResource,
-  getClusterDeploymentAgentReservedValue,
-} = CIM;
+const { getAnnotationsFromAgentSelector, getClusterDeploymentResource } = CIM;
 
 type getOnClusterCreateParams = {
   secretModel: K8sKind;
@@ -221,84 +216,56 @@ export const getOnSaveHostsSelection =
   }: getOnSaveHostsSelectionParams) =>
   async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
     try {
-      // TODO(mlibra) To save:
-      // - useMastersAsWorkers
-
-      const reservedAgentlabelValue = getClusterDeploymentAgentReservedValue(
-        clusterDeployment.metadata.namespace,
-        clusterDeployment.metadata.name,
-      );
-
       const hostIds = values.autoSelectHosts ? values.autoSelectedHostIds : values.selectedHostIds;
+      const name = clusterDeployment.metadata.name;
+      const namespace = clusterDeployment.metadata.namespace;
       const releasedAgents = agents.filter(
         (a) =>
           !hostIds.includes(a.metadata.uid) &&
-          (Object.hasOwnProperty.call(a.metadata.labels || {}, RESERVED_AGENT_LABEL_KEY)
-            ? a.metadata.labels[RESERVED_AGENT_LABEL_KEY] === reservedAgentlabelValue
-            : false),
+          a.spec?.clusterDeploymentName?.name === name &&
+          a.spec?.clusterDeploymentName?.namespace === namespace,
       );
 
       await Promise.all(
         releasedAgents.map((agent) => {
-          const newLabels = { ...agent.metadata.labels };
-          delete newLabels[RESERVED_AGENT_LABEL_KEY];
           return k8sPatch(agentModel, agent, [
             {
-              op: 'replace',
-              path: `/metadata/labels`,
-              value: newLabels,
-            },
-            {
-              op: 'replace',
+              op: 'remove',
               path: '/spec/clusterDeploymentName',
-              value: {}, // means: delete
             },
           ]);
         }),
       );
 
-      // add RESERVED_AGENT_LABEL_KEY to the newly selected agents
       const addAgents = agents.filter(
         (a) =>
           hostIds.includes(a.metadata.uid) &&
-          !Object.hasOwnProperty.call(a.metadata.labels, RESERVED_AGENT_LABEL_KEY),
+          (a.spec?.clusterDeploymentName?.name !== name ||
+            a.spec?.clusterDeploymentName?.namespace !== namespace),
       );
       await Promise.all(
         addAgents.map((agent) => {
-          const newLabels = { ...(agent.metadata.labels || {}) };
-          newLabels[RESERVED_AGENT_LABEL_KEY] = reservedAgentlabelValue;
           return k8sPatch(agentModel, agent, [
-            {
-              op: agent.metadata.labels ? 'replace' : 'add',
-              path: '/metadata/labels',
-              value: newLabels,
-            },
             {
               op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
               path: '/spec/clusterDeploymentName',
               value: {
-                name: clusterDeployment.metadata.name,
-                namespace: clusterDeployment.metadata.namespace,
+                name,
+                namespace,
               },
             },
           ]);
         }),
       );
 
-      // TODO(mlibra): check for errors in the releasedResults and reservedResults
-      // https://v1-18.docs.kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
-      // const matchExpressions = getAgentLocationMatchExpression(values.locations);
-
-      const clusterDeploymentPatches = [];
-      appendPatch(
-        clusterDeploymentPatches,
-        '/metadata/annotations',
-        getAnnotationsFromAgentSelector(clusterDeployment, values),
-        clusterDeployment.metadata.annotations,
-      );
-
-      if (clusterDeploymentPatches.length > 0) {
-        await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
+      if (clusterDeployment) {
+        await k8sPatch(clusterDeploymentModel, clusterDeployment, [
+          {
+            op: clusterDeployment.metadata.annotations ? 'replace' : 'add',
+            path: '/metadata/annotations',
+            value: getAnnotationsFromAgentSelector(clusterDeployment, values),
+          },
+        ]);
       }
     } catch (e) {
       throw `Failed to patch resources: ${e.message}`;

@@ -63,6 +63,7 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
         onSubmit={onSubmit}
         onFinish={(values) => history.push(`/k8s/ns/${namespace}/${InfraEnvKind}/${values.name}`)}
         onClose={() => history.push(`/k8s/ns/${namespace}/${InfraEnvKind}/`)}
+        isBMPlatform={false} // TODO
       />
     </div>
   );
