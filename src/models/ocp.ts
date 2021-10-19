@@ -1,4 +1,4 @@
-import { K8sKind } from '@openshift-console/dynamic-plugin-sdk/lib/api/api-types';
+import { K8sKind } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
 
 export const SecretModel: K8sKind = {
   apiVersion: 'v1',

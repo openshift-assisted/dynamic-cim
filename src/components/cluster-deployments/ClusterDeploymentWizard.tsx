@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
-import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
+import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
+
 import {
   AgentClusterInstallKind,
   AgentKind,
@@ -50,7 +51,7 @@ const getAgentClusterInstallQuery = (namespace: string, clusterInstallRefName?: 
         namespaced: true,
         isList: false,
       }
-    : undefined;
+    : null;
 
 const getClusterDeploymentQuery = (namespace: string, clusterDeploymentName?: string) =>
   clusterDeploymentName
@@ -61,7 +62,7 @@ const getClusterDeploymentQuery = (namespace: string, clusterDeploymentName?: st
         namespaced: true,
         isList: false,
       }
-    : undefined;
+    : null;
 
 const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
   history,
