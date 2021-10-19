@@ -1,12 +1,7 @@
 import * as React from 'react';
-import { match as RMatch } from 'react-router-dom';
+import { match as RMatch, useHistory } from 'react-router-dom';
 import { CIM } from 'openshift-assisted-ui-lib';
-import {
-  useK8sModel,
-  k8sCreate,
-  history,
-  useK8sWatchResource,
-} from '@openshift-console/dynamic-plugin-sdk/api';
+import { useK8sModel, k8sCreate, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 
 import '../styles.scss';
@@ -26,6 +21,7 @@ type InfraEnvWizardProps = {
 
 const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const namespace = match.params.ns;
+  const history = useHistory(); // TODO(mlibra): Can we take this from the dynamic SDK?
   const [infraModel] = useK8sModel(InfraEnvKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
@@ -38,21 +34,25 @@ const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
   const usedNames = infraEnvs.map((env) => env.metadata?.name).filter(Boolean) as string[];
   const onSubmit = React.useCallback(
     async (values) => {
-      // TODO(mlibra): Secret, clusterDeployment and agentClusterinstall should removed from here once we have Late Binding
-      const secret = await k8sCreate(secretModel, getSecret(namespace, values));
-      const clusterDeployment = await k8sCreate(
-        clusterDepModel,
-        getClusterDeploymentForInfraEnv(secret.metadata.name, namespace, values),
-      );
-      await k8sCreate(
-        agentClusterInstallModel,
-        getAgentClusterInstall({
+      // TODO(mlibra): Secret, clusterDeployment and agentClusterinstall should be removed from here once we have Late Binding
+      // TODO(mlibra): We already have, let's do it!
+      const secret = await k8sCreate({
+        model: secretModel,
+        data: getSecret(namespace, values),
+      });
+      const clusterDeployment = await k8sCreate({
+        model: clusterDepModel,
+        data: getClusterDeploymentForInfraEnv(secret.metadata.name, namespace, values),
+      });
+      await k8sCreate({
+        model: agentClusterInstallModel,
+        data: getAgentClusterInstall({
           clusterDeploymentName: clusterDeployment.metadata.name,
           namespace,
           values,
         }),
-      );
-      return k8sCreate(infraModel, getInfraEnv(namespace, values));
+      });
+      return k8sCreate({ model: infraModel, data: getInfraEnv(namespace, values) });
     },
     [infraModel, namespace, secretModel, agentClusterInstallModel, clusterDepModel],
   );

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
+import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { AgentKind, ClusterDeploymentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
@@ -23,7 +23,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           isList: true,
           selector,
         }
-      : undefined,
+      : null,
   );
 
   /* TODO(mlibra)

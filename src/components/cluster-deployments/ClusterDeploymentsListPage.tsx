@@ -1,40 +1,41 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { Link, useHistory } from 'react-router-dom';
 import { Dropdown, DropdownProps, KebabToggle, DropdownItem } from '@patternfly/react-core';
 import {
   useK8sWatchResource,
-  k8sKill,
   ListPageHeader,
   ListPageBody,
   VirtualizedTable,
   TableColumn,
   RowProps,
-  TableRow,
   TableData,
   ListPageCreate,
-  history,
+  k8sDelete,
   useK8sModel,
-} from '@openshift-console/dynamic-plugin-sdk/api';
-import {
-  AgentClusterInstallK8sResource,
-  ClusterDeploymentK8sResource,
-} from 'openshift-assisted-ui-lib/dist/src/cim';
+} from '@openshift-console/dynamic-plugin-sdk';
+import { CIM } from 'openshift-assisted-ui-lib';
+import { useTranslation } from 'react-i18next';
+import { sortable } from '@patternfly/react-table';
+
 import { AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 import { canEditCluster } from './utils';
-import { useTranslation } from 'react-i18next';
 
 type ClusterDeploymentRowData = {
-  clusterDeployment: ClusterDeploymentK8sResource;
-  agentClusterInstall?: AgentClusterInstallK8sResource;
+  clusterDeployment: CIM.ClusterDeploymentK8sResource;
+  agentClusterInstall?: CIM.AgentClusterInstallK8sResource;
 };
+
+const COL_NAME = 'cluster-deployments-table-name';
+const COL_STATUS = 'cluster-deployments-table-status';
+const COL_DISTRIB_VER = 'cluster-deployments-table-distribution-version';
+const COL_ACTIONS = ''; // keep blank to force visibility
 
 const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   obj,
-  index,
-  style,
+  activeColumnIDs,
 }) => {
   const { t } = useTranslation();
+  const history = useHistory(); // TODO(mlibra): Can we take this from the dynamic SDK?
 
   const [isKebabOpen, setKebabOpen] = React.useState(false);
   const [clusterDeploymentModel] = useK8sModel(ClusterDeploymentKind);
@@ -56,7 +57,12 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
       component="button"
       onClick={() => {
         // Do not ask, the user knows what is he doing
-        k8sKill(clusterDeploymentModel, clusterDeployment);
+        k8sDelete({
+          model: clusterDeploymentModel,
+          resource: clusterDeployment,
+          requestInit: {},
+          json: {},
+        });
       }}
     >
       {t('dynamic-cim~Delete')}
@@ -69,13 +75,21 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
   };
 
   return (
-    <TableRow id={uid} index={index} trKey={uid} style={style}>
-      <TableData>
+    <>
+      <TableData id={COL_NAME} activeColumnIDs={activeColumnIDs}>
         <Link to={`/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}`}>{name}</Link>
       </TableData>
-      <TableData>-</TableData>
-      <TableData>{agentClusterInstall?.spec?.imageSetRef?.name}</TableData>
-      <TableData className="dropdown-kebab-pf pf-c-table__action">
+      <TableData id={COL_STATUS} activeColumnIDs={activeColumnIDs}>
+        -
+      </TableData>
+      <TableData id={COL_DISTRIB_VER} activeColumnIDs={activeColumnIDs}>
+        {agentClusterInstall?.spec?.imageSetRef?.name}
+      </TableData>
+      <TableData
+        id={COL_ACTIONS}
+        activeColumnIDs={activeColumnIDs}
+        className="dropdown-kebab-pf pf-c-table__action"
+      >
         <Dropdown
           onSelect={onSelect}
           toggle={
@@ -86,20 +100,22 @@ const ClusterDeploymentRow: React.FC<RowProps<ClusterDeploymentRowData>> = ({
           dropdownItems={kebabActions}
         />
       </TableData>
-    </TableRow>
+    </>
   );
 };
 
 const ClusterDeploymentsListPage: React.FC = () => {
   const { t } = useTranslation();
-  const [clusterDeployments, loaded, error] = useK8sWatchResource<ClusterDeploymentK8sResource[]>({
+  const [clusterDeployments, loaded, error] = useK8sWatchResource<
+    CIM.ClusterDeploymentK8sResource[]
+  >({
     kind: ClusterDeploymentKind,
     isList: true,
     namespaced: true,
   });
 
   const [agentClusterInstalls, aciLoaded, aciError] = useK8sWatchResource<
-    AgentClusterInstallK8sResource[]
+    CIM.AgentClusterInstallK8sResource[]
   >({
     kind: AgentClusterInstallKind,
     isList: true,
@@ -119,15 +135,20 @@ const ClusterDeploymentsListPage: React.FC = () => {
       ),
     }));
 
-  const columns: TableColumn<K8sResourceCommon>[] = [
+  const columns: TableColumn<ClusterDeploymentRowData>[] = [
     {
       title: t('dynamic-cim~Name'),
+      id: COL_NAME,
+      transforms: [sortable],
+      sort: 'metadata.name',
     },
     {
       title: t('dynamic-cim~Status'),
+      id: COL_STATUS,
     },
     {
       title: t('dynamic-cim~Distribution version'),
+      id: COL_DISTRIB_VER,
     },
     // plus actions
   ];
@@ -142,8 +163,7 @@ const ClusterDeploymentsListPage: React.FC = () => {
           loaded={loaded && aciLoaded}
           loadError={error || aciError}
           data={data}
-          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-          // @ts-ignore
+          unfilteredData={data /* So far there is no filtering */}
           Row={ClusterDeploymentRow}
           columns={columns}
         />

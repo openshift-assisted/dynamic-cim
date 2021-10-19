@@ -39,6 +39,7 @@ export const getPullSecretResource = ({
   metadata: {
     generateName: `pullsecret-${name}-`,
     namespace,
+    name: undefined,
   },
   data: {
     '.dockerconfigjson': btoa(pullSecret),

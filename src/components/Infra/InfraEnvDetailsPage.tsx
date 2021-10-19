@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
-import { DetailsPage, K8sKind } from '@openshift-console/dynamic-plugin-sdk/api';
+import { K8sKind } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
+import { DetailsPage } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import AgentTable from '../Agent/AgentTable';
 import {

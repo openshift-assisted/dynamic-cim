@@ -1,15 +1,17 @@
-import { k8sCreate, k8sPatch, K8sKind } from '@openshift-console/dynamic-plugin-sdk/api';
+import { k8sCreate, k8sPatch } from '@openshift-console/dynamic-plugin-sdk';
+import { K8sModel } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { RouteComponentProps } from 'react-router';
+
 import { ClusterDeploymentKind } from '../../kind';
 import { appendPatch, getPullSecretResource, getAgentClusterInstall } from '../../k8s';
 
 const { getAnnotationsFromAgentSelector, getClusterDeploymentResource } = CIM;
 
 type getOnClusterCreateParams = {
-  secretModel: K8sKind;
-  clusterDeploymentModel: K8sKind;
-  agentClusterInstallModel: K8sKind;
+  secretModel: K8sModel;
+  clusterDeploymentModel: K8sModel;
+  agentClusterInstallModel: K8sModel;
   namespace: string;
   setClusterDeploymentName: (name: string) => void;
 };
@@ -27,29 +29,29 @@ export const getOnClusterCreate =
       const { name, highAvailabilityMode } = params;
       const annotations = undefined; // will be set later (Hosts Selection)
 
-      const secret = await k8sCreate(
-        secretModel,
-        getPullSecretResource({ namespace, name, pullSecret }),
-      );
-      const pullSecretName = secret?.metadata?.name;
-      const createdClusterDeployment = await k8sCreate(
-        clusterDeploymentModel,
-        getClusterDeploymentResource({ namespace, annotations, pullSecretName, ...params }),
-      );
+      const secret = await k8sCreate({
+        model: secretModel,
+        data: getPullSecretResource({ namespace, name, pullSecret }),
+      });
+      const pullSecretName = secret?.metadata?.name || '';
+      const createdClusterDeployment = await k8sCreate({
+        model: clusterDeploymentModel,
+        data: getClusterDeploymentResource({ namespace, annotations, pullSecretName, ...params }),
+      });
 
       // keep watching the newly created resource from now on
       setClusterDeploymentName(createdClusterDeployment.metadata.name);
 
-      await k8sCreate(
-        agentClusterInstallModel,
-        getAgentClusterInstall({
+      await k8sCreate({
+        model: agentClusterInstallModel,
+        data: getAgentClusterInstall({
           name,
           clusterDeploymentRefName: createdClusterDeployment.metadata.name,
           namespace,
           ocpVersion: openshiftVersion,
           controlPlaneAgents: highAvailabilityMode === 'Full' ? 0 : 1, // set to 1 for SNO (the only indicator of SNO so far)
         }),
-      );
+      });
 
       // TODO(mlibra): InstallEnv should be patched for the ClusterDeployment reference
     } catch (e) {
@@ -61,8 +63,8 @@ export const getOnClusterCreate =
 type getOnClusterDetailsUpdateParams = {
   agentClusterInstall: CIM.AgentClusterInstallK8sResource;
   clusterDeployment: CIM.ClusterDeploymentK8sResource;
-  clusterDeploymentModel: K8sKind;
-  agentClusterInstallModel: K8sKind;
+  clusterDeploymentModel: K8sModel;
+  agentClusterInstallModel: K8sModel;
 };
 
 export const getOnClusterDetailsUpdate =
@@ -103,10 +105,18 @@ export const getOnClusterDetailsUpdate =
       );
 
       if (clusterDeploymentPatches.length > 0) {
-        await k8sPatch(clusterDeploymentModel, clusterDeployment, clusterDeploymentPatches);
+        await k8sPatch({
+          model: clusterDeploymentModel,
+          resource: clusterDeployment,
+          data: clusterDeploymentPatches,
+        });
       }
       if (agentClusterInstallPatches.length > 0) {
-        await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
+        await k8sPatch({
+          model: agentClusterInstallModel,
+          resource: agentClusterInstall,
+          data: agentClusterInstallPatches,
+        });
       }
     } catch (e) {
       throw `Failed to patch the ClusterDeployment or AgentClusterInstall resource: ${e.message}`;
@@ -132,7 +142,7 @@ export const getOnSaveDetails =
 
 type getOnSaveNetworkingParams = {
   agentClusterInstall: CIM.AgentClusterInstallK8sResource;
-  agentClusterInstallModel: K8sKind;
+  agentClusterInstallModel: K8sModel;
 };
 
 export const getOnSaveNetworking =
@@ -194,7 +204,11 @@ export const getOnSaveNetworking =
       );
 
       if (agentClusterInstallPatches.length > 0) {
-        await k8sPatch(agentClusterInstallModel, agentClusterInstall, agentClusterInstallPatches);
+        await k8sPatch({
+          model: agentClusterInstallModel,
+          resource: agentClusterInstall,
+          data: agentClusterInstallPatches,
+        });
       }
     } catch (e) {
       throw `Failed to patch the AgentClusterInstall resource: ${e.message}`;
@@ -203,8 +217,8 @@ export const getOnSaveNetworking =
 
 type getOnSaveHostsSelectionParams = {
   clusterDeployment: CIM.ClusterDeploymentK8sResource;
-  agentModel: K8sKind;
-  clusterDeploymentModel: K8sKind;
+  agentModel: K8sModel;
+  clusterDeploymentModel: K8sModel;
   agents: CIM.AgentK8sResource[];
 };
 
@@ -229,12 +243,16 @@ export const getOnSaveHostsSelection =
 
       await Promise.all(
         releasedAgents.map((agent) => {
-          return k8sPatch(agentModel, agent, [
-            {
-              op: 'remove',
-              path: '/spec/clusterDeploymentName',
-            },
-          ]);
+          return k8sPatch({
+            model: agentModel,
+            resource: agent,
+            data: [
+              {
+                op: 'remove',
+                path: '/spec/clusterDeploymentName',
+              },
+            ],
+          });
         }),
       );
 
@@ -246,27 +264,35 @@ export const getOnSaveHostsSelection =
       );
       await Promise.all(
         addAgents.map((agent) => {
-          return k8sPatch(agentModel, agent, [
-            {
-              op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
-              path: '/spec/clusterDeploymentName',
-              value: {
-                name,
-                namespace,
+          return k8sPatch({
+            model: agentModel,
+            resource: agent,
+            data: [
+              {
+                op: agent.spec?.clusterDeploymentName ? 'replace' : 'add',
+                path: '/spec/clusterDeploymentName',
+                value: {
+                  name,
+                  namespace,
+                },
               },
-            },
-          ]);
+            ],
+          });
         }),
       );
 
       if (clusterDeployment) {
-        await k8sPatch(clusterDeploymentModel, clusterDeployment, [
-          {
-            op: clusterDeployment.metadata.annotations ? 'replace' : 'add',
-            path: '/metadata/annotations',
-            value: getAnnotationsFromAgentSelector(clusterDeployment, values),
-          },
-        ]);
+        await k8sPatch({
+          model: clusterDeploymentModel,
+          resource: clusterDeployment,
+          data: [
+            {
+              op: clusterDeployment.metadata.annotations ? 'replace' : 'add',
+              path: '/metadata/annotations',
+              value: getAnnotationsFromAgentSelector(clusterDeployment, values),
+            },
+          ],
+        });
       }
     } catch (e) {
       throw `Failed to patch resources: ${e.message}`;

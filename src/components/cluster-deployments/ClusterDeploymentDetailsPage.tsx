@@ -2,30 +2,28 @@ import * as React from 'react';
 import { match as RMatch } from 'react-router-dom';
 import {
   DetailsPage,
-  K8sKind,
-  KebabOptionsCreator,
   PageComponentProps,
   useK8sWatchResource,
-} from '@openshift-console/dynamic-plugin-sdk/api';
+  k8sGet,
+} from '@openshift-console/dynamic-plugin-sdk';
+import { K8sModel } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
+import { KebabOptionsCreatorProps } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
-import { k8sGet } from '@openshift-console/dynamic-plugin-sdk/api';
 import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
 import { canEditCluster } from './utils';
 import { SecretModel } from '../../models/ocp';
-import { SecretK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim';
 
 const { LoadingState, ClusterDeploymentDetails } = CIM;
 
-type DetailsTabProps = React.PropsWithChildren<
-  PageComponentProps<CIM.ClusterDeploymentK8sResource>
-> & {
-  agentClusterInstall: K8sResourceCommon;
-};
+type DetailsTabProps =
+  React.PropsWithChildren<PageComponentProps /* Should be generic. The DetailsPage API is about to evolve in the SDK: <CIM.ClusterDeploymentK8sResource> */> & {
+    agentClusterInstall: K8sResourceCommon;
+  };
 
 const getClusterDeploymentActions =
-  (agentClusterInstall?: CIM.AgentClusterInstallK8sResource): KebabOptionsCreator =>
-  (kindObj: K8sKind, clusterDeployment: K8sResourceCommon) => {
+  (agentClusterInstall?: CIM.AgentClusterInstallK8sResource): KebabOptionsCreatorProps =>
+  (kindObj: K8sModel, clusterDeployment: K8sResourceCommon) => {
     const { namespace, name } = clusterDeployment.metadata || {};
     return [
       {
@@ -37,7 +35,9 @@ const getClusterDeploymentActions =
   };
 
 export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
-  const { obj: clusterDeployment } = props;
+  const { obj } = props;
+  const clusterDeployment =
+    obj as CIM.ClusterDeploymentK8sResource; /* That re-typying should not be needed with generic PageComponentProps */
   const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallError] =
     useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
       clusterDeployment?.spec?.clusterInstallRef.name
@@ -48,7 +48,7 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
             namespaced: true,
             isList: false,
           }
-        : undefined,
+        : null,
     );
 
   const agentSelector = clusterDeployment.spec?.platform?.agentBareMetal?.agentSelector;
@@ -60,7 +60,7 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
           selector: agentSelector,
           namespaced: true,
         }
-      : undefined,
+      : null,
   );
 
   if (!clusterDeployment) return null;
@@ -69,9 +69,9 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
   if (!(agentsLoaded && agentClusterInstallLoaded)) return <LoadingState />;
 
   const fetchSecret: React.ComponentProps<typeof ClusterDeploymentDetails>['fetchSecret'] = (
-    name,
-    namespace,
-  ): SecretK8sResource => k8sGet(SecretModel, name, namespace);
+    name: string,
+    namespace: string,
+  ): CIM.SecretK8sResource => k8sGet({ model: SecretModel, name, ns: namespace });
 
   return (
     <div className="co-dashboard-body">
