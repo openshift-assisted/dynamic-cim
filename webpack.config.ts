@@ -4,7 +4,7 @@ import * as webpack from 'webpack';
 import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
 import * as path from 'path';
 import * as MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import { ConsoleRemotePlugin } from '@openshift-console/dynamic-plugin-sdk/webpack';
+import { ConsoleRemotePlugin } from '@openshift-console/dynamic-plugin-sdk-webpack';
 
 const extractCSS = new MiniCssExtractPlugin();
 const overpassTest = /overpass-.*\.(woff2?|ttf|eot|otf)(\?.*$|$)/;
