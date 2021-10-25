@@ -24,7 +24,7 @@ export const getOnClusterCreate =
   }: getOnClusterCreateParams) =>
   async ({ pullSecret, openshiftVersion, ...params }: CIM.ClusterDeploymentDetailsValues) => {
     try {
-      const { name } = params;
+      const { name, highAvailabilityMode } = params;
       const annotations = undefined; // will be set later (Hosts Selection)
 
       const secret = await k8sCreate(
@@ -47,6 +47,7 @@ export const getOnClusterCreate =
           clusterDeploymentRefName: createdClusterDeployment.metadata.name,
           namespace,
           ocpVersion: openshiftVersion,
+          controlPlaneAgents: highAvailabilityMode === 'Full' ? 0 : 1, // set to 1 for SNO (the only indicator of SNO so far)
         }),
       );
 

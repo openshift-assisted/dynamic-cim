@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk/api';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import {
   AgentClusterInstallKind,
@@ -21,7 +20,12 @@ import {
   getOnSaveNetworking,
 } from './transitionCallbacks';
 
-const { ClusterDeploymentWizard: AIClusterDeploymentWizard, LoadingState } = CIM;
+const {
+  ClusterDeploymentWizard: AIClusterDeploymentWizard,
+  LoadingState,
+  ACM_ENABLED_FEATURES,
+  FeatureGateContextProvider,
+} = CIM;
 
 type ClusterDeploymentWizardProps = {
   history: RouteComponentProps['history'];
@@ -82,11 +86,12 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     );
 
   // it is ok if missing
-  const [agentClusterInstall] = useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
-    getAgentClusterInstallQuery(namespace, clusterDeployment?.spec?.clusterInstallRef?.name),
-  );
+  const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallLoadError] =
+    useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
+      getAgentClusterInstallQuery(namespace, clusterDeployment?.spec?.clusterInstallRef?.name),
+    );
 
-  const [clusterImageSets, loading] = useK8sWatchResource<K8sResourceCommon[]>({
+  const [clusterImageSets, loading] = useK8sWatchResource<CIM.ClusterImageSetK8sResource[]>({
     kind: ClusterImageSetKind,
     namespaced: false,
     isList: true,
@@ -172,13 +177,17 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     },
     canDelete: () => false,
   };
-  if (!loading || (queriedClusterDeploymentName && !clusterDeployment)) {
+  if (
+    !loading ||
+    (queriedClusterDeploymentName && !clusterDeployment) ||
+    !agentClusterInstallLoaded
+  ) {
     return <LoadingState />;
   }
 
   if (clusterDeploymentError || agentsError) {
     // TODO(mlibra): Render error state instead
-    throw new Error(agentsError);
+    throw new Error(`Data retieval error: ${clusterDeploymentError || agentsError}`);
   }
 
   // Careful: do not let the <AIClusterDeploymentWizard /> to be unmounted since it holds current step in its state
@@ -206,7 +215,9 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
 };
 
 export default (props: ClusterDeploymentWizardProps) => (
-  <ModalDialogsContextProvider>
-    <ClusterDeploymentWizard {...props} />
-  </ModalDialogsContextProvider>
+  <FeatureGateContextProvider features={ACM_ENABLED_FEATURES}>
+    <ModalDialogsContextProvider>
+      <ClusterDeploymentWizard {...props} />
+    </ModalDialogsContextProvider>
+  </FeatureGateContextProvider>
 );
