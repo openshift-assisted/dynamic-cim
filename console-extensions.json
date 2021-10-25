@@ -34,10 +34,13 @@
     }
   },
   {
-    "type": "console.page/route",
+    "type": "console.resource/create",
     "properties": {
-      "exact": true,
-      "path": ["/k8s/ns/:ns/agent-install.openshift.io~v1beta1~InfraEnv/~new"],
+      "model": {
+        "group": "agent-install.openshift.io",
+        "version": "v1beta1",
+        "kind": "InfraEnv"
+      },
       "component": {
         "$codeRef": "InfraEnvForm.default"
       }
@@ -83,20 +86,13 @@
     }
   },
   {
-    "type": "console.page/route",
+    "type": "console.resource/create",
     "properties": {
-      "exact": true,
-      "path": ["/k8s/ns/:ns/hive.openshift.io~v1~ClusterDeployment/~new"],
-      "component": {
-        "$codeRef": "CreateClusterWizard.default"
-      }
-    }
-  },
-  {
-    "type": "console.page/route",
-    "properties": {
-      "exact": true,
-      "path": ["/k8s/cluster/hive.openshift.io~v1~ClusterDeployment/~new"],
+      "model": {
+        "group": "hive.openshift.io",
+        "version": "v1",
+        "kind": "ClusterDeployment"
+      },
       "component": {
         "$codeRef": "CreateClusterWizard.default"
       }
