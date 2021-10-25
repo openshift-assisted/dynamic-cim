@@ -1,15 +1,16 @@
 import * as React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import { useHistory } from 'react-router';
+import { CreateResourceComponentProps } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
-import ClusterDeploymentWizard from './ClusterDeploymentWizard';
 import { getPreferredLang } from '../../utils';
+import ClusterDeploymentWizard from './ClusterDeploymentWizard';
 
 import './cluster-deployment.scss';
 
 const { I18N } = CIM;
 
-const CreateClusterWizard: React.FC<RouteComponentProps<{ ns: string }>> = ({ match, history }) => {
-  const namespace = match?.params?.ns || 'assisted-installer';
+const CreateClusterWizard: React.FC<CreateResourceComponentProps> = ({ namespace = 'default' }) => {
+  const history = useHistory(); // TODO(mlibra): Can we take this from the dynamic SDK?
 
   return (
     <I18N preferredLang={getPreferredLang()}>

@@ -1,7 +1,12 @@
 import * as React from 'react';
-import { match as RMatch, useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { CIM } from 'openshift-assisted-ui-lib';
-import { useK8sModel, k8sCreate, useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import {
+  useK8sModel,
+  k8sCreate,
+  useK8sWatchResource,
+  CreateResourceComponentProps,
+} from '@openshift-console/dynamic-plugin-sdk';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
 
 import '../styles.scss';
@@ -15,12 +20,8 @@ const {
   getSecret,
 } = CIM;
 
-type InfraEnvWizardProps = {
-  match: RMatch<{ ns: string }>;
-};
-
-const InfraEnvWizard: React.FC<InfraEnvWizardProps> = ({ match }) => {
-  const namespace = match.params.ns;
+const InfraEnvWizard: React.FC<CreateResourceComponentProps> = ({ namespace = 'default' }) => {
+  console.log('-- InfraEnvWizard namespace: ', namespace);
   const history = useHistory(); // TODO(mlibra): Can we take this from the dynamic SDK?
   const [infraModel] = useK8sModel(InfraEnvKind);
   const [secretModel] = useK8sModel('core~v1~Secret');
