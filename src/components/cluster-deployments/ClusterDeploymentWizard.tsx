@@ -87,7 +87,7 @@ const ClusterDeploymentWizard: React.FC<ClusterDeploymentWizardProps> = ({
     );
 
   // it is ok if missing
-  const [agentClusterInstall, agentClusterInstallLoaded, agentClusterInstallLoadError] =
+  const [agentClusterInstall, agentClusterInstallLoaded] =
     useK8sWatchResource<CIM.AgentClusterInstallK8sResource>(
       getAgentClusterInstallQuery(namespace, clusterDeployment?.spec?.clusterInstallRef?.name),
     );

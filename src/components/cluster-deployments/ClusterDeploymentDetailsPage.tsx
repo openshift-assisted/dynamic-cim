@@ -5,6 +5,7 @@ import {
   PageComponentProps,
   useK8sWatchResource,
   k8sGet,
+  consoleFetchJSON,
 } from '@openshift-console/dynamic-plugin-sdk';
 import { K8sModel } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
 import { KebabOptionsCreatorProps } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
@@ -14,7 +15,9 @@ import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../..
 import { canEditCluster } from './utils';
 import { SecretModel } from '../../models/ocp';
 
-const { LoadingState, ClusterDeploymentDetails } = CIM;
+const { LoadingState, ClusterDeploymentDetails, getOnFetchEventsHandler } = CIM;
+
+const backendUrl = '/api/kubernetes/';
 
 type DetailsTabProps =
   React.PropsWithChildren<PageComponentProps /* Should be generic. The DetailsPage API is about to evolve in the SDK: <CIM.ClusterDeploymentK8sResource> */> & {
@@ -73,6 +76,14 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
     namespace: string,
   ): CIM.SecretK8sResource => k8sGet({ model: SecretModel, name, ns: namespace });
 
+  const fetchEvents = (url: string) => consoleFetchJSON(`${backendUrl}${url}`);
+
+  const onFetchEvents = getOnFetchEventsHandler(
+    fetchEvents,
+    'open-cluster-management',
+    agentClusterInstall,
+  );
+
   return (
     <div className="co-dashboard-body">
       <ClusterDeploymentDetails
@@ -81,9 +92,7 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
         agents={agents}
         fetchSecret={fetchSecret}
         agentTableClassName="agents-table"
-        onFetchEvents={async () => {
-          console.log('TODO');
-        }}
+        onFetchEvents={onFetchEvents}
       />
     </div>
   );
