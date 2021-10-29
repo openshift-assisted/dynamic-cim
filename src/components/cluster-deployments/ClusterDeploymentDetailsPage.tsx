@@ -6,18 +6,26 @@ import {
   useK8sWatchResource,
   k8sGet,
   consoleFetchJSON,
+  ResourceLink,
 } from '@openshift-console/dynamic-plugin-sdk';
 import { K8sModel } from '@openshift-console/dynamic-plugin-sdk/lib/api/common-types';
 import { KebabOptionsCreatorProps } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { K8sResourceCommon, K8sResourceKindReference } from '@openshift-console/dynamic-plugin-sdk';
-import { AgentClusterInstallKind, AgentKind, ClusterDeploymentKind } from '../../kind';
+import {
+  AgentClusterInstallKind,
+  AgentKind,
+  ClusterDeploymentKind,
+  InfraEnvKind,
+} from '../../kind';
 import { canEditCluster } from './utils';
 import { SecretModel } from '../../models/ocp';
 
 const { LoadingState, ClusterDeploymentDetails, getOnFetchEventsHandler } = CIM;
 
 const backendUrl = '/api/kubernetes/';
+
+const fetchEvents = (url: string) => consoleFetchJSON(`${backendUrl}${url}`);
 
 type DetailsTabProps =
   React.PropsWithChildren<PageComponentProps /* Should be generic. The DetailsPage API is about to evolve in the SDK: <CIM.ClusterDeploymentK8sResource> */> & {
@@ -36,6 +44,10 @@ const getClusterDeploymentActions =
       },
     ];
   };
+
+const getInfraEnvLink = ({ name, namespace }) => (
+  <ResourceLink kind={InfraEnvKind} name={name} namespace={namespace} />
+);
 
 export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
   const { obj } = props;
@@ -76,8 +88,6 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
     namespace: string,
   ): CIM.SecretK8sResource => k8sGet({ model: SecretModel, name, ns: namespace });
 
-  const fetchEvents = (url: string) => consoleFetchJSON(`${backendUrl}${url}`);
-
   const onFetchEvents = getOnFetchEventsHandler(
     fetchEvents,
     'open-cluster-management',
@@ -90,6 +100,7 @@ export const ClusterDeploymentOverview = (props: DetailsTabProps) => {
         clusterDeployment={clusterDeployment}
         agentClusterInstall={agentClusterInstall}
         agents={agents}
+        getInfraEnvLink={getInfraEnvLink}
         fetchSecret={fetchSecret}
         agentTableClassName="agents-table"
         onFetchEvents={onFetchEvents}

@@ -1,5 +1,9 @@
 import * as React from 'react';
-import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk';
+import {
+  useK8sWatchResource,
+  useK8sModel,
+  ResourceLink,
+} from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { AgentKind, ClusterDeploymentKind } from '../../kind';
 import { ModalDialogsContextProvider, useModalDialogsContext } from '../modals';
@@ -11,6 +15,10 @@ const { InfraEnvAgentTable, LoadingState } = CIM;
 type AgentTableProps = {
   obj: CIM.InfraEnvK8sResource;
 };
+
+const getClusterDeploymentLink = ({ name, namespace }) => (
+  <ResourceLink kind={ClusterDeploymentKind} name={name} namespace={namespace} />
+);
 
 const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
   const { editHostModal } = useModalDialogsContext();
@@ -73,9 +81,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ obj }) => {
           canEditRole={() => true}
           onEditRole={onEditRoleAction(agentModel)}
           className="agents-table"
-          getClusterDeploymentLink={({ name, namespace }) =>
-            `/k8s/ns/${namespace}/${ClusterDeploymentKind}/${name}`
-          }
+          getClusterDeploymentLink={getClusterDeploymentLink}
           bareMetalHosts={[]}
           infraEnv={obj}
         />
