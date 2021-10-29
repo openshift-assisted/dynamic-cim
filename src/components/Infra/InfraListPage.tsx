@@ -15,25 +15,28 @@ import { sortable } from '@patternfly/react-table';
 
 import { InfraEnvKind } from '../../kind';
 
-const columns: TableColumn<CIM.InfraEnvK8sResource>[] = [
-  {
-    title: 'Name',
-    id: 'infra-envs-table-name',
-    transforms: [sortable],
-    sort: 'metadata.name',
-  },
-];
+const COL_NAME = 'infra-envs-table-name';
+const COL_PROJECT = 'infra-envs-table-project';
 
-const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, activeColumnIDs }) => {
+const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boolean }> = ({
+  obj,
+  activeColumnIDs,
+  isNamespaced,
+}) => {
   return (
     <>
-      <TableData id={columns[0].id} activeColumnIDs={activeColumnIDs}>
+      <TableData id={COL_NAME} activeColumnIDs={activeColumnIDs}>
         <ResourceLink
           kind={InfraEnvKind}
           name={obj.metadata?.name}
           namespace={obj.metadata?.namespace}
         />
       </TableData>
+      {!isNamespaced && (
+        <TableData id={COL_PROJECT} activeColumnIDs={activeColumnIDs}>
+          <ResourceLink kind="Project" name={obj.metadata?.namespace} />
+        </TableData>
+      )}
     </>
   );
 };
@@ -49,15 +52,31 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
     namespace,
   });
 
+  const columns: TableColumn<CIM.InfraEnvK8sResource>[] = React.useMemo(() => {
+    const cols = [
+      {
+        title: 'Name',
+        id: COL_NAME,
+        transforms: [sortable],
+        sort: 'metadata.name',
+      },
+    ];
+    if (!namespace) {
+      cols.push({
+        title: 'Project',
+        id: COL_PROJECT,
+        transforms: [sortable],
+        sort: 'metadata.namespace',
+      });
+    }
+
+    return cols;
+  }, [namespace]);
+
   return (
     <>
       <ListPageHeader title="Infrastructures">
-        <ListPageCreate
-          groupVersionKind={InfraEnvKind}
-          // namespace={namespace || 'assisted-installer'}
-        >
-          Create
-        </ListPageCreate>
+        <ListPageCreate groupVersionKind={InfraEnvKind}>Create</ListPageCreate>
       </ListPageHeader>
       <ListPageBody>
         <VirtualizedTable
@@ -65,7 +84,7 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
           loadError={loadError}
           data={infras}
           unfilteredData={infras /* So far we do not have filters */}
-          Row={InfraRow}
+          Row={(props) => <InfraRow isNamespaced={!!namespace} {...props} />}
           columns={columns}
         />
       </ListPageBody>
