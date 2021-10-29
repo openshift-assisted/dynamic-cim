@@ -15,8 +15,11 @@ import { sortable } from '@patternfly/react-table';
 
 import { InfraEnvKind } from '../../kind';
 
+const { AGENT_LOCATION_LABEL_KEY } = CIM;
+
 const COL_NAME = 'infra-envs-table-name';
 const COL_PROJECT = 'infra-envs-table-project';
+const COL_LOCATION = 'infra-envs-table-location';
 
 const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boolean }> = ({
   obj,
@@ -37,6 +40,9 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boo
           <ResourceLink kind="Project" name={obj.metadata?.namespace} />
         </TableData>
       )}
+      <TableData id={COL_LOCATION} activeColumnIDs={activeColumnIDs}>
+        {obj.metadata?.labels[AGENT_LOCATION_LABEL_KEY] || 'N/A'}
+      </TableData>
     </>
   );
 };
@@ -61,6 +67,7 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
         sort: 'metadata.name',
       },
     ];
+
     if (!namespace) {
       cols.push({
         title: 'Project',
@@ -70,7 +77,14 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
       });
     }
 
-    return cols;
+    cols.push({
+      title: 'Location',
+      id: COL_LOCATION,
+      transforms: [sortable],
+      sort: `metadata.labels['${AGENT_LOCATION_LABEL_KEY}']`,
+    });
+
+    return cols.filter(Boolean);
   }, [namespace]);
 
   return (
