@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
 import {
   useK8sWatchResource,
   ListPageHeader,
@@ -9,6 +8,7 @@ import {
   RowProps,
   TableData,
   ListPageCreate,
+  ResourceLink,
 } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable } from '@patternfly/react-table';
@@ -28,9 +28,11 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, activeColu
   return (
     <>
       <TableData id={columns[0].id} activeColumnIDs={activeColumnIDs}>
-        <Link to={`/k8s/ns/${obj.metadata?.namespace}/${InfraEnvKind}/${obj.metadata?.name}`}>
-          {obj.metadata?.name}
-        </Link>
+        <ResourceLink
+          kind={InfraEnvKind}
+          name={obj.metadata?.name}
+          namespace={obj.metadata?.namespace}
+        />
       </TableData>
     </>
   );
