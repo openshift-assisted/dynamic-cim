@@ -13,19 +13,34 @@ import {
 import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable } from '@patternfly/react-table';
 
-import { InfraEnvKind } from '../../kind';
+import { AgentKind, InfraEnvKind } from '../../kind';
+import InlineStatusGroup from './InlineStatusGroup';
 
-const { AGENT_LOCATION_LABEL_KEY } = CIM;
+const { AGENT_LOCATION_LABEL_KEY, getAgentStatus } = CIM;
 
 const COL_NAME = 'infra-envs-table-name';
 const COL_PROJECT = 'infra-envs-table-project';
 const COL_LOCATION = 'infra-envs-table-location';
+const COL_AGENTS = 'infra-envs-table-hosts';
 
 const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boolean }> = ({
   obj,
   activeColumnIDs,
   isNamespaced,
 }) => {
+  const agentSelector = obj.status?.agentLabelSelector?.matchLabels;
+  const [infraAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+    agentSelector
+      ? {
+          kind: AgentKind,
+          isList: true,
+          selector: agentSelector,
+        }
+      : null,
+  );
+  const errorAgents = infraAgents.filter((a) => getAgentStatus(a)[0] === 'error');
+  const warningAgents = infraAgents.filter((a) => getAgentStatus(a)[0] === 'insufficient');
+
   return (
     <>
       <TableData id={COL_NAME} activeColumnIDs={activeColumnIDs}>
@@ -42,6 +57,17 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boo
       )}
       <TableData id={COL_LOCATION} activeColumnIDs={activeColumnIDs}>
         {obj.metadata?.labels[AGENT_LOCATION_LABEL_KEY] || 'N/A'}
+      </TableData>
+      <TableData id={COL_AGENTS} activeColumnIDs={activeColumnIDs}>
+        {infraAgents.length ? (
+          <InlineStatusGroup
+            healthy={infraAgents.length - errorAgents.length - warningAgents.length}
+            danger={errorAgents.length}
+            warning={warningAgents.length}
+          />
+        ) : (
+          0
+        )}
       </TableData>
     </>
   );
@@ -82,6 +108,13 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
       id: COL_LOCATION,
       transforms: [sortable],
       sort: `metadata.labels['${AGENT_LOCATION_LABEL_KEY}']`,
+    });
+
+    cols.push({
+      title: 'Hosts',
+      id: COL_AGENTS,
+      transforms: [],
+      sort: '',
     });
 
     return cols.filter(Boolean);
