@@ -4,11 +4,11 @@ import {
   ListPageHeader,
   ListPageBody,
   VirtualizedTable,
-  TableColumn,
   RowProps,
   TableData,
   ListPageCreate,
   ResourceLink,
+  useActiveColumns,
 } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable } from '@patternfly/react-table';
@@ -19,15 +19,11 @@ import InlineStatusGroup from './InlineStatusGroup';
 const { AGENT_LOCATION_LABEL_KEY, getAgentStatus } = CIM;
 
 const COL_NAME = 'infra-envs-table-name';
-const COL_PROJECT = 'infra-envs-table-project';
+const COL_PROJECT = 'namespace';
 const COL_LOCATION = 'infra-envs-table-location';
 const COL_AGENTS = 'infra-envs-table-hosts';
 
-const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boolean }> = ({
-  obj,
-  activeColumnIDs,
-  isNamespaced,
-}) => {
+const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, activeColumnIDs }) => {
   const agentSelector = obj.status?.agentLabelSelector?.matchLabels;
   const [infraAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
     agentSelector
@@ -50,11 +46,9 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boo
           namespace={obj.metadata?.namespace}
         />
       </TableData>
-      {!isNamespaced && (
-        <TableData id={COL_PROJECT} activeColumnIDs={activeColumnIDs}>
-          <ResourceLink kind="Project" name={obj.metadata?.namespace} />
-        </TableData>
-      )}
+      <TableData id={COL_PROJECT} activeColumnIDs={activeColumnIDs}>
+        <ResourceLink kind="Project" name={obj.metadata?.namespace} />
+      </TableData>
       <TableData id={COL_LOCATION} activeColumnIDs={activeColumnIDs}>
         {obj.metadata?.labels[AGENT_LOCATION_LABEL_KEY] || 'N/A'}
       </TableData>
@@ -72,6 +66,32 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource> & { isNamespaced: boo
     </>
   );
 };
+const columns = [
+  {
+    title: 'Name',
+    id: COL_NAME,
+    transforms: [sortable],
+    sort: 'metadata.name',
+  },
+  {
+    title: 'Project X',
+    id: COL_PROJECT,
+    transforms: [sortable],
+    sort: 'metadata.namespace',
+  },
+  {
+    title: 'Location',
+    id: COL_LOCATION,
+    transforms: [sortable],
+    sort: `metadata.labels['${AGENT_LOCATION_LABEL_KEY}']`,
+  },
+  {
+    title: 'Hosts',
+    id: COL_AGENTS,
+    transforms: [],
+    sort: '',
+  },
+];
 
 type InfraListPageProps = {
   namespace: string;
@@ -83,57 +103,27 @@ const InfraListPage: React.FC<InfraListPageProps> = ({ namespace }) => {
     isList: true,
     namespace,
   });
-
-  const columns: TableColumn<CIM.InfraEnvK8sResource>[] = React.useMemo(() => {
-    const cols = [
-      {
-        title: 'Name',
-        id: COL_NAME,
-        transforms: [sortable],
-        sort: 'metadata.name',
-      },
-    ];
-
-    if (!namespace) {
-      cols.push({
-        title: 'Project',
-        id: COL_PROJECT,
-        transforms: [sortable],
-        sort: 'metadata.namespace',
-      });
-    }
-
-    cols.push({
-      title: 'Location',
-      id: COL_LOCATION,
-      transforms: [sortable],
-      sort: `metadata.labels['${AGENT_LOCATION_LABEL_KEY}']`,
-    });
-
-    cols.push({
-      title: 'Hosts',
-      id: COL_AGENTS,
-      transforms: [],
-      sort: '',
-    });
-
-    return cols.filter(Boolean);
-  }, [namespace]);
-
+  const [activeColumns, userSettingsLoaded] = useActiveColumns({
+    columns,
+    showNamespaceOverride: false, // TODO(mlibra): remove once GH openshift/console/pull/10368 gets merged
+    columnManagementID: '', // TODO(mlibra): remove once GH openshift/console/pull/10368 gets merged
+  });
   return (
     <>
       <ListPageHeader title="Infrastructures">
         <ListPageCreate groupVersionKind={InfraEnvKind}>Create</ListPageCreate>
       </ListPageHeader>
       <ListPageBody>
-        <VirtualizedTable
-          loaded={loaded}
-          loadError={loadError}
-          data={infras}
-          unfilteredData={infras /* So far we do not have filters */}
-          Row={(props) => <InfraRow isNamespaced={!!namespace} {...props} />}
-          columns={columns}
-        />
+        {userSettingsLoaded && (
+          <VirtualizedTable
+            loaded={loaded}
+            loadError={loadError}
+            data={infras}
+            unfilteredData={infras /* So far we do not have filters */}
+            Row={InfraRow}
+            columns={activeColumns}
+          />
+        )}
       </ListPageBody>
     </>
   );
