@@ -12,6 +12,10 @@ import {
 } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
 import { sortable } from '@patternfly/react-table';
+import {
+  AgentK8sResource,
+  InfraEnvK8sResource,
+} from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 import { AgentKind, InfraEnvKind } from '../../kind';
 import InlineStatusGroup from './InlineStatusGroup';
@@ -23,9 +27,9 @@ const COL_PROJECT = 'namespace';
 const COL_LOCATION = 'infra-envs-table-location';
 const COL_AGENTS = 'infra-envs-table-hosts';
 
-const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, activeColumnIDs }) => {
+const InfraRow: React.FC<RowProps<InfraEnvK8sResource>> = ({ obj, activeColumnIDs }) => {
   const agentSelector = obj.status?.agentLabelSelector?.matchLabels;
-  const [infraAgents] = useK8sWatchResource<CIM.AgentK8sResource[]>(
+  const [infraAgents] = useK8sWatchResource<AgentK8sResource[]>(
     agentSelector
       ? {
           kind: AgentKind,
@@ -50,7 +54,7 @@ const InfraRow: React.FC<RowProps<CIM.InfraEnvK8sResource>> = ({ obj, activeColu
         <ResourceLink kind="Project" name={obj.metadata?.namespace} />
       </TableData>
       <TableData id={COL_LOCATION} activeColumnIDs={activeColumnIDs}>
-        {obj.metadata?.labels[AGENT_LOCATION_LABEL_KEY] || 'N/A'}
+        {obj.metadata?.labels?.[AGENT_LOCATION_LABEL_KEY] || 'N/A'}
       </TableData>
       <TableData id={COL_AGENTS} activeColumnIDs={activeColumnIDs}>
         {infraAgents.length ? (

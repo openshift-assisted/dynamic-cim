@@ -16,10 +16,12 @@ interface Configuration extends webpack.Configuration {
 const config: Configuration = {
   mode: 'development',
   context: path.resolve(__dirname, 'src'),
+  entry: {},
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name]-bundle.js',
     chunkFilename: '[name]-chunk.js',
+    // assetModuleFilename: 'assets/[name].[ext]',
   },
   devServer: {
     contentBase: path.join(__dirname, 'dist'),
@@ -88,6 +90,7 @@ const config: Configuration = {
         options: {
           name: 'assets/[name].[ext]',
         },
+        // type: 'asset/resource',
       },
     ],
   },
@@ -111,6 +114,7 @@ const config: Configuration = {
 
 if (process.env.NODE_ENV === 'production') {
   config.mode = 'production';
+  // config.output.filename = '[name]-bundle-[contenthash].min.js';
   config.output.filename = '[name]-bundle-[hash].min.js';
   config.output.chunkFilename = '[name]-chunk-[chunkhash].min.js';
   config.optimization.chunkIds = 'deterministic';

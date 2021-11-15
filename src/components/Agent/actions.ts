@@ -1,13 +1,14 @@
 import { CIM } from 'openshift-assisted-ui-lib';
-import { K8sResourceCommon, k8sPatch } from '@openshift-console/dynamic-plugin-sdk';
+import { k8sPatch } from '@openshift-console/dynamic-plugin-sdk';
 import { ModalDialogsContextType } from '../modals';
+import { AgentK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 export const onEditHostAction =
   (
     editHostModal: ModalDialogsContextType['editHostModal'],
     agentModel: any,
   ): CIM.ClusterDeploymentHostsTablePropsActions['onEditHost'] =>
-  (agent: K8sResourceCommon) =>
+  (agent: AgentK8sResource) =>
     editHostModal.open({
       agent,
       usedHostnames: [],
@@ -33,7 +34,7 @@ export const onEditHostAction =
 
 export const onEditRoleAction =
   (agentModel: any): CIM.ClusterDeploymentHostsTablePropsActions['onEditRole'] =>
-  async (agent: K8sResourceCommon, role: string) =>
+  async (agent: CIM.AgentK8sResource, role: string) =>
     await k8sPatch({
       model: agentModel,
       resource: agent,

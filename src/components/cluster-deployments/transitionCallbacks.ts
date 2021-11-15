@@ -5,6 +5,11 @@ import { RouteComponentProps } from 'react-router';
 
 import { ClusterDeploymentKind } from '../../kind';
 import { appendPatch, getPullSecretResource, getAgentClusterInstall } from '../../k8s';
+import {
+  AgentClusterInstallK8sResource,
+  AgentK8sResource,
+  ClusterDeploymentK8sResource,
+} from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 const { getAnnotationsFromAgentSelector, getClusterDeploymentResource } = CIM;
 
@@ -34,19 +39,21 @@ export const getOnClusterCreate =
         data: getPullSecretResource({ namespace, name, pullSecret }),
       });
       const pullSecretName = secret?.metadata?.name || '';
-      const createdClusterDeployment = await k8sCreate({
+      const createdClusterDeployment = await k8sCreate<ClusterDeploymentK8sResource>({
         model: clusterDeploymentModel,
         data: getClusterDeploymentResource({ namespace, annotations, pullSecretName, ...params }),
       });
 
       // keep watching the newly created resource from now on
-      setClusterDeploymentName(createdClusterDeployment.metadata.name);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      setClusterDeploymentName(createdClusterDeployment.metadata?.name!);
 
-      await k8sCreate({
+      await k8sCreate<AgentClusterInstallK8sResource>({
         model: agentClusterInstallModel,
         data: getAgentClusterInstall({
           name,
-          clusterDeploymentRefName: createdClusterDeployment.metadata.name,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          clusterDeploymentRefName: createdClusterDeployment.metadata?.name!,
           namespace,
           ocpVersion: openshiftVersion,
           controlPlaneAgents: highAvailabilityMode === 'Full' ? 0 : 1, // set to 1 for SNO (the only indicator of SNO so far)
@@ -61,8 +68,8 @@ export const getOnClusterCreate =
   };
 
 type getOnClusterDetailsUpdateParams = {
-  agentClusterInstall: CIM.AgentClusterInstallK8sResource;
-  clusterDeployment: CIM.ClusterDeploymentK8sResource;
+  agentClusterInstall: AgentClusterInstallK8sResource;
+  clusterDeployment: ClusterDeploymentK8sResource;
   clusterDeploymentModel: K8sModel;
   agentClusterInstallModel: K8sModel;
 };
@@ -101,7 +108,7 @@ export const getOnClusterDetailsUpdate =
         agentClusterInstallPatches,
         '/spec/imageSetRef/name',
         values.openshiftVersion,
-        agentClusterInstall.spec.imageSetRef?.name,
+        agentClusterInstall.spec?.imageSetRef?.name,
       );
 
       if (clusterDeploymentPatches.length > 0) {
@@ -141,7 +148,7 @@ export const getOnSaveDetails =
   };
 
 type getOnSaveNetworkingParams = {
-  agentClusterInstall: CIM.AgentClusterInstallK8sResource;
+  agentClusterInstall: AgentClusterInstallK8sResource;
   agentClusterInstallModel: K8sModel;
 };
 
@@ -155,7 +162,7 @@ export const getOnSaveNetworking =
         agentClusterInstallPatches,
         '/spec/sshPublicKey',
         values.sshPublicKey,
-        agentClusterInstall.spec.sshPublicKey,
+        agentClusterInstall.spec?.sshPublicKey,
       );
 
       appendPatch(
@@ -216,10 +223,10 @@ export const getOnSaveNetworking =
   };
 
 type getOnSaveHostsSelectionParams = {
-  clusterDeployment: CIM.ClusterDeploymentK8sResource;
+  clusterDeployment: ClusterDeploymentK8sResource;
   agentModel: K8sModel;
   clusterDeploymentModel: K8sModel;
-  agents: CIM.AgentK8sResource[];
+  agents: AgentK8sResource[];
 };
 
 export const getOnSaveHostsSelection =
@@ -232,14 +239,17 @@ export const getOnSaveHostsSelection =
   async (values: CIM.ClusterDeploymentHostsSelectionValues) => {
     try {
       const hostIds = values.autoSelectHosts ? values.autoSelectedHostIds : values.selectedHostIds;
-      const name = clusterDeployment.metadata.name;
-      const namespace = clusterDeployment.metadata.namespace;
-      const releasedAgents = agents.filter(
-        (a) =>
-          !hostIds.includes(a.metadata.uid) &&
+      const name = clusterDeployment.metadata?.name;
+      const namespace = clusterDeployment.metadata?.namespace;
+      const releasedAgents = agents.filter((a) => {
+        const agentId = a.metadata?.uid;
+        return (
+          agentId &&
+          !hostIds.includes(agentId) &&
           a.spec?.clusterDeploymentName?.name === name &&
-          a.spec?.clusterDeploymentName?.namespace === namespace,
-      );
+          a.spec?.clusterDeploymentName?.namespace === namespace
+        );
+      });
 
       await Promise.all(
         releasedAgents.map((agent) => {
@@ -256,12 +266,15 @@ export const getOnSaveHostsSelection =
         }),
       );
 
-      const addAgents = agents.filter(
-        (a) =>
-          hostIds.includes(a.metadata.uid) &&
+      const addAgents = agents.filter((a) => {
+        const agentId = a.metadata?.uid;
+        return (
+          agentId &&
+          hostIds.includes(agentId) &&
           (a.spec?.clusterDeploymentName?.name !== name ||
-            a.spec?.clusterDeploymentName?.namespace !== namespace),
-      );
+            a.spec?.clusterDeploymentName?.namespace !== namespace)
+        );
+      });
       await Promise.all(
         addAgents.map((agent) => {
           return k8sPatch({
@@ -282,12 +295,12 @@ export const getOnSaveHostsSelection =
       );
 
       if (clusterDeployment) {
-        await k8sPatch({
+        await k8sPatch<ClusterDeploymentK8sResource>({
           model: clusterDeploymentModel,
           resource: clusterDeployment,
           data: [
             {
-              op: clusterDeployment.metadata.annotations ? 'replace' : 'add',
+              op: clusterDeployment.metadata?.annotations ? 'replace' : 'add',
               path: '/metadata/annotations',
               value: getAnnotationsFromAgentSelector(clusterDeployment, values),
             },
