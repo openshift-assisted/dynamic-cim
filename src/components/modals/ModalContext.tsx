@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { CIM } from 'openshift-assisted-ui-lib';
-import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
+import { AnyAction, Reducer } from 'redux';
+import { AgentK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 const {
   reducer: dialogsReducer,
@@ -17,9 +18,9 @@ type DownloadIsoDialogProps = {
 type AddBmcDialogProps = {};
 
 export type EditHostModal = {
-  agent: K8sResourceCommon;
+  agent: AgentK8sResource;
   usedHostnames: string[] | undefined;
-  onSave: (agent: K8sResourceCommon, hostname: string) => Promise<any>;
+  onSave: (agent: AgentK8sResource, hostname: string) => Promise<any>;
 };
 
 type ModalDialogsDataTypes = {
@@ -43,7 +44,10 @@ const ModalDialogsContext = React.createContext<ModalDialogsContextType | undefi
 
 // Simplify common modal-related - isOpen, onClose and passing params
 const ModalDialogsContextProvider: React.FC = ({ children }) => {
-  const [dialogsState, dispatchDialogsAction] = React.useReducer(dialogsReducer, {});
+  const [dialogsState, dispatchDialogsAction] = React.useReducer<Reducer<{}, AnyAction>>(
+    dialogsReducer,
+    {},
+  );
 
   function getOpenDialog<DataType>(dialogId: string) {
     return (data: DataType) => dispatchDialogsAction(openDialogAction({ dialogId, data }));

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { useK8sWatchResource, useK8sModel } from '@openshift-console/dynamic-plugin-sdk';
 import { CIM } from 'openshift-assisted-ui-lib';
+import { ClusterDeploymentK8sResource } from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 import {
   AgentClusterInstallKind,
@@ -35,12 +36,12 @@ type ClusterDeploymentWizardProps = {
 };
 
 const getUsedClusterNames = (
-  current?: CIM.ClusterDeploymentK8sResource,
-  clusterDeployments: CIM.ClusterDeploymentK8sResource[] = [],
+  current?: ClusterDeploymentK8sResource,
+  clusterDeployments: ClusterDeploymentK8sResource[] = [],
 ): string[] =>
   clusterDeployments
-    .filter((cd) => current?.metadata?.uid !== cd.metadata.uid)
-    .map((cd): string => `${cd.metadata.name}.${cd.spec?.baseDomain}`);
+    .filter((cd) => current?.metadata?.uid !== cd.metadata?.uid)
+    .map((cd): string => `${cd.metadata?.name}.${cd.spec?.baseDomain}`);
 
 const getAgentClusterInstallQuery = (namespace: string, clusterInstallRefName?: string) =>
   clusterInstallRefName

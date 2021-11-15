@@ -8,6 +8,11 @@ import {
   CreateResourceComponentProps,
 } from '@openshift-console/dynamic-plugin-sdk';
 import { InfraEnvKind, AgentClusterInstallKind, ClusterDeploymentKind } from '../../kind';
+import {
+  ClusterDeploymentK8sResource,
+  InfraEnvK8sResource,
+  SecretK8sResource,
+} from 'openshift-assisted-ui-lib/dist/src/cim/types';
 
 import '../styles.scss';
 import './infra.scss';
@@ -27,7 +32,7 @@ const InfraEnvWizard: React.FC<CreateResourceComponentProps> = ({ namespace = 'd
   const [secretModel] = useK8sModel('core~v1~Secret');
   const [clusterDepModel] = useK8sModel(ClusterDeploymentKind);
   const [agentClusterInstallModel] = useK8sModel(AgentClusterInstallKind);
-  const [infraEnvs] = useK8sWatchResource<CIM.InfraEnvK8sResource[]>({
+  const [infraEnvs] = useK8sWatchResource<InfraEnvK8sResource[]>({
     kind: InfraEnvKind,
     namespace,
     isList: true,
@@ -37,18 +42,19 @@ const InfraEnvWizard: React.FC<CreateResourceComponentProps> = ({ namespace = 'd
     async (values) => {
       // TODO(mlibra): Secret, clusterDeployment and agentClusterinstall should be removed from here once we have Late Binding
       // TODO(mlibra): We already have, let's do it!
-      const secret = await k8sCreate({
+      const secret = await k8sCreate<SecretK8sResource>({
         model: secretModel,
         data: getSecret(namespace, values),
       });
-      const clusterDeployment = await k8sCreate({
+      const clusterDeployment = await k8sCreate<ClusterDeploymentK8sResource>({
         model: clusterDepModel,
-        data: getClusterDeploymentForInfraEnv(secret.metadata.name, namespace, values),
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        data: getClusterDeploymentForInfraEnv(secret.metadata?.name!, namespace, values),
       });
       await k8sCreate({
         model: agentClusterInstallModel,
         data: getAgentClusterInstall({
-          clusterDeploymentName: clusterDeployment.metadata.name,
+          clusterDeploymentName: clusterDeployment.metadata?.name,
           namespace,
           values,
         }),

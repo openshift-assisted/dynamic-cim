@@ -5,7 +5,7 @@ import { useModalDialogsContext } from './ModalContext';
 const { EditAgentModal } = CIM;
 
 // eslint-disable-next-line
-const onFormSaveError = () => {};
+const onFormSaveError = (e) => {};
 
 const EditHostModal: React.FC = () => {
   const { editHostModal } = useModalDialogsContext();
